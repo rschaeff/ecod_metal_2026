@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import type { FamilyDomain } from '@/types/cysteine';
@@ -32,9 +33,33 @@ interface FamilyClientProps {
   };
 }
 
+type CysFilter = 'all' | 'has_disulfide' | 'has_metal' | 'has_both' | 'has_cys';
+
+const filterOptions: { value: CysFilter; label: string }[] = [
+  { value: 'all', label: 'All domains' },
+  { value: 'has_cys', label: 'Has cysteines' },
+  { value: 'has_disulfide', label: 'Has disulfide' },
+  { value: 'has_metal', label: 'Has metal-binding' },
+  { value: 'has_both', label: 'Has both' },
+];
+
 export default function FamilyClient({ fGroupId, domains, page, totalPages, total, sortBy, sortDir, familyCysTotals }: FamilyClientProps) {
   const router = useRouter();
   const isSmallFamily = total <= SMALL_FAMILY_THRESHOLD;
+  const [filter, setFilter] = useState<CysFilter>('all');
+
+  const filteredDomains = useMemo(() => {
+    if (filter === 'all') return domains;
+    return domains.filter((d) => {
+      switch (filter) {
+        case 'has_cys': return d.totalCys > 0;
+        case 'has_disulfide': return d.nDisulfide > 0;
+        case 'has_metal': return d.nMetalBinding > 0;
+        case 'has_both': return d.nDisulfide > 0 && d.nMetalBinding > 0;
+        default: return true;
+      }
+    });
+  }, [domains, filter]);
 
   const handleSort = (newSortBy: string) => {
     const newDir = sortBy === newSortBy && sortDir === 'asc' ? 'desc' : 'asc';
@@ -79,10 +104,21 @@ export default function FamilyClient({ fGroupId, domains, page, totalPages, tota
 
       {/* Domain Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-wrap gap-2">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Showing {((page - 1) * 50) + 1}&ndash;{Math.min(page * 50, total)} of {total.toLocaleString()} domains
+            {filter === 'all'
+              ? `Showing ${((page - 1) * 50) + 1}\u2013${Math.min(page * 50, total)} of ${total.toLocaleString()} domains`
+              : `${filteredDomains.length} of ${domains.length} domains on this page`}
           </p>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as CysFilter)}
+            className="text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-3 py-1.5 focus:ring-2 focus:ring-amber-500"
+          >
+            {filterOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
         </div>
 
         <div className="overflow-x-auto">
@@ -108,7 +144,7 @@ export default function FamilyClient({ fGroupId, domains, page, totalPages, tota
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {domains.map((d) => (
+              {filteredDomains.map((d) => (
                 <tr key={d.domainId} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                   <td className="px-4 py-3 text-sm">
                     <Link

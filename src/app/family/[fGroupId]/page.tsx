@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getFamilyInfo, getFamilyDomains } from '@/lib/queries';
+import { getFamilyInfo, getFamilyDomains, getFamilyTaxonomy } from '@/lib/queries';
 import FamilyClient from './FamilyClient';
 
 export const dynamic = 'force-dynamic';
@@ -26,9 +26,10 @@ export default async function FamilyPage({ params, searchParams }: FamilyPagePro
   const sortBy = sp.sortBy || 'domain_id';
   const sortDir = (sp.sortDir || 'asc') as 'asc' | 'desc';
 
-  const [familyInfo, domainsResult] = await Promise.all([
+  const [familyInfo, domainsResult, taxonomy] = await Promise.all([
     getFamilyInfo(fGroupId),
     getFamilyDomains(fGroupId, page, 50, sortBy, sortDir),
+    getFamilyTaxonomy(fGroupId),
   ]);
 
   if (!familyInfo) notFound();
@@ -55,6 +56,15 @@ export default async function FamilyPage({ params, searchParams }: FamilyPagePro
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
           {familyInfo.domainCount.toLocaleString()} F70 representative domains
         </p>
+        {taxonomy.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {taxonomy.map((t) => (
+              <span key={t.superkingdom} className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                {t.superkingdom}: {t.nDomains.toLocaleString()}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Client-side components: chart + table + pagination */}

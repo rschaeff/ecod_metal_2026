@@ -1,8 +1,9 @@
-import { getDashboardSummary, getXGroupBreakdown, getMethodStats } from '@/lib/queries';
-import type { MethodStat } from '@/lib/queries';
+import { getDashboardSummary, getXGroupBreakdown, getMethodStats, getConfidenceDistribution, getSuperkingdomBreakdown } from '@/lib/queries';
+import type { MethodStat, ConfidenceBucket, SuperkingdomBreakdown } from '@/lib/queries';
 import StatCard from '@/components/ui/StatCard';
 import SearchBar from '@/components/ui/SearchBar';
 import DashboardCharts from './DashboardCharts';
+import ConfidenceChart from './ConfidenceChart';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -16,13 +17,17 @@ export default async function DashboardPage() {
   let summary = emptySummary;
   let xGroups: Awaited<ReturnType<typeof getXGroupBreakdown>> = [];
   let methods: MethodStat[] = [];
+  let confidence: ConfidenceBucket[] = [];
+  let taxonomy: SuperkingdomBreakdown[] = [];
   let dbError = false;
 
   try {
-    [summary, xGroups, methods] = await Promise.all([
+    [summary, xGroups, methods, confidence, taxonomy] = await Promise.all([
       getDashboardSummary(),
       getXGroupBreakdown(),
       getMethodStats(),
+      getConfidenceDistribution(),
+      getSuperkingdomBreakdown(),
     ]);
   } catch (e) {
     console.error('Dashboard DB error:', e);
@@ -124,6 +129,52 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Confidence Distribution */}
+      {confidence.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-10">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            ESM2 Classification Confidence
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Distribution of max-class probability across all classified cysteines
+          </p>
+          <ConfidenceChart data={confidence} />
+        </div>
+      )}
+
+      {/* Classification by Superkingdom */}
+      {taxonomy.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-10">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Classification by Superkingdom
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Superkingdom</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Domains</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Disulfide</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Metal</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Unclassified</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {taxonomy.map((t) => (
+                  <tr key={t.superkingdom} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-4 py-2 font-medium text-gray-900 dark:text-gray-100">{t.superkingdom}</td>
+                    <td className="px-4 py-2 text-right text-gray-600 dark:text-gray-400">{t.nDomains.toLocaleString()}</td>
+                    <td className="px-4 py-2 text-right text-amber-600 dark:text-amber-400">{t.nDisulfide.toLocaleString()}</td>
+                    <td className="px-4 py-2 text-right text-teal-600 dark:text-teal-400">{t.nMetal.toLocaleString()}</td>
+                    <td className="px-4 py-2 text-right text-gray-500 dark:text-gray-400">{t.nUnclassified.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Methods & Annotations */}
       {methods.length > 0 && (

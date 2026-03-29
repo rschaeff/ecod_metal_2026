@@ -140,6 +140,116 @@ export async function getXGroupBreakdown(): Promise<XGroupBreakdown[]> {
   });
 }
 
+// ---- Superkingdom Taxonomy ----
+
+export interface SuperkingdomBreakdown {
+  superkingdom: string;
+  nDomains: number;
+  nDisulfide: number;
+  nMetal: number;
+  nUnclassified: number;
+}
+
+export async function getSuperkingdomBreakdown(): Promise<SuperkingdomBreakdown[]> {
+  const rows = await query<{
+    superkingdom: string;
+    n_domains: string;
+    n_disulfide: string;
+    n_metal: string;
+    n_unclassified: string;
+  }>(
+    `SELECT pt.superkingdom,
+            count(DISTINCT ds.domain_id)::text as n_domains,
+            COALESCE(sum(ds.n_disulfide), 0)::text as n_disulfide,
+            COALESCE(sum(ds.n_metal_binding), 0)::text as n_metal,
+            COALESCE(sum(ds.n_unclassified), 0)::text as n_unclassified
+     FROM cys_classification.domain_summary ds
+     JOIN ecod_commons.domains d ON ds.domain_id = d.id
+     JOIN ecod_commons.proteins p ON d.protein_id = p.id
+     JOIN ecod_commons.protein_taxonomy pt ON p.source_id = pt.source_id AND p.source_type = pt.source_type
+     WHERE pt.superkingdom IS NOT NULL AND pt.superkingdom != ''
+     GROUP BY pt.superkingdom
+     ORDER BY count(DISTINCT ds.domain_id) DESC`
+  );
+
+  return rows.map((r) => ({
+    superkingdom: r.superkingdom,
+    nDomains: parseInt(r.n_domains),
+    nDisulfide: parseInt(r.n_disulfide),
+    nMetal: parseInt(r.n_metal),
+    nUnclassified: parseInt(r.n_unclassified),
+  }));
+}
+
+export async function getFamilyTaxonomy(fGroupId: string): Promise<SuperkingdomBreakdown[]> {
+  const rows = await query<{
+    superkingdom: string;
+    n_domains: string;
+    n_disulfide: string;
+    n_metal: string;
+    n_unclassified: string;
+  }>(
+    `SELECT pt.superkingdom,
+            count(DISTINCT ds.domain_id)::text as n_domains,
+            COALESCE(sum(ds.n_disulfide), 0)::text as n_disulfide,
+            COALESCE(sum(ds.n_metal_binding), 0)::text as n_metal,
+            COALESCE(sum(ds.n_unclassified), 0)::text as n_unclassified
+     FROM cys_classification.domain_summary ds
+     JOIN ecod_commons.f_group_assignments fa ON ds.domain_id = fa.domain_id
+     JOIN ecod_commons.domains d ON ds.domain_id = d.id
+     JOIN ecod_commons.proteins p ON d.protein_id = p.id
+     JOIN ecod_commons.protein_taxonomy pt ON p.source_id = pt.source_id AND p.source_type = pt.source_type
+     WHERE fa.f_group_id = $1 AND pt.superkingdom IS NOT NULL AND pt.superkingdom != ''
+     GROUP BY pt.superkingdom
+     ORDER BY count(DISTINCT ds.domain_id) DESC`,
+    [fGroupId]
+  );
+
+  return rows.map((r) => ({
+    superkingdom: r.superkingdom,
+    nDomains: parseInt(r.n_domains),
+    nDisulfide: parseInt(r.n_disulfide),
+    nMetal: parseInt(r.n_metal),
+    nUnclassified: parseInt(r.n_unclassified),
+  }));
+}
+
+// ---- Confidence Distribution ----
+
+export interface ConfidenceBucket {
+  bucket: string;
+  classification: string;
+  count: number;
+}
+
+export async function getConfidenceDistribution(): Promise<ConfidenceBucket[]> {
+  const rows = await query<{ bucket: string; classification: string; count: string }>(
+    `SELECT
+       CASE width_bucket(confidence, 0.3, 1.0, 7)
+         WHEN 1 THEN '0.3-0.4'
+         WHEN 2 THEN '0.4-0.5'
+         WHEN 3 THEN '0.5-0.6'
+         WHEN 4 THEN '0.6-0.7'
+         WHEN 5 THEN '0.7-0.8'
+         WHEN 6 THEN '0.8-0.9'
+         WHEN 7 THEN '0.9-1.0'
+         ELSE '<0.3'
+       END as bucket,
+       classification,
+       count(*)::text as count
+     FROM cys_classification.cysteine_classifications
+     WHERE confidence IS NOT NULL
+     GROUP BY 1, classification
+     ORDER BY 1, classification`
+  );
+
+  return rows.map((r) => ({
+    bucket: r.bucket,
+    classification: r.classification,
+    count: parseInt(r.count),
+  }));
+}
+
 // ---- Family Index ----
 
 export interface FamilyListItem {
@@ -549,6 +659,26 @@ export async function searchQuery(q: string): Promise<SearchResult[]> {
         id: r.domain_id,
         label: r.domain_id,
         description: `PDB ${trimmed.toUpperCase()}`,
+      });
+    }
+  }
+
+  // Check if it looks like a UniProt accession (6+ alphanumeric, starts with letter)
+  if (/^[A-Z][A-Z0-9]{5,}$/i.test(trimmed) && !/^e\w+$/i.test(trimmed)) {
+    const rows = await query<{ domain_id: string; id: number; source_type: string; uniprot_acc: string }>(
+      `SELECT d.domain_id, d.id, p.source_type, p.uniprot_acc
+       FROM ecod_commons.domains d
+       JOIN ecod_commons.proteins p ON d.protein_id = p.id
+       WHERE p.uniprot_acc ILIKE $1
+       LIMIT 20`,
+      [escapeLike(trimmed) + '%']
+    );
+    for (const r of rows) {
+      results.push({
+        type: 'domain',
+        id: r.domain_id,
+        label: r.domain_id,
+        description: `UniProt ${r.uniprot_acc}`,
       });
     }
   }
