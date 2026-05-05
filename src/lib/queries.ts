@@ -214,6 +214,265 @@ export async function getFamilyTaxonomy(fGroupId: string): Promise<SuperkingdomB
   }));
 }
 
+// ---- H-group aggregates (Fig 5A,B) ----
+
+// One row per H-group with PDB-source and AFDB-source classification
+// fractions. Backs the /h-group browser confusion matrix and the
+// /h-group/[id] detail header.
+//
+// NOTE: this query is expensive — it scans every classified F70 rep and
+// aggregates per H-group. Per TRICYP_SPEC step 6 this should be replaced
+// with `SELECT * FROM cys_classification.hgroup_summary` once that
+// materialized view lands. The in-memory cache (24 h TTL) keeps the live
+// query workable in the meantime.
+export interface HGroupSummary {
+  hGroupId: string;
+  hGroupName: string;
+  xGroupId: string;
+  xGroupName: string;
+  nPdbReps: number;
+  nAfdbReps: number;
+  pdbTotalCys: number;
+  afdbTotalCys: number;
+  pdbDisulfidePct: number | null;   // % of PDB-rep cys called disulfide
+  pdbMetalPct: number | null;       // % of PDB-rep cys called metal-binding
+  afdbDisulfidePct: number | null;  // % of AFDB-rep cys called disulfide (ESM2)
+  afdbMetalPct: number | null;      // % of AFDB-rep cys called metal-binding (ESM2)
+}
+
+export async function getHGroupSummary(): Promise<HGroupSummary[]> {
+  const rows = await query<{
+    h_group_id: string;
+    h_group_name: string;
+    x_group_id: string;
+    x_group_name: string;
+    n_pdb_reps: string;
+    n_afdb_reps: string;
+    pdb_total_cys: string;
+    afdb_total_cys: string;
+    pdb_n_disulfide: string;
+    pdb_n_metal: string;
+    afdb_n_disulfide: string;
+    afdb_n_metal: string;
+  }>(
+    `SELECT
+        fa.h_group_id,
+        COALESCE(hc.name, fa.h_group_id) as h_group_name,
+        fa.x_group_id,
+        COALESCE(xc.name, fa.x_group_id) as x_group_name,
+        count(DISTINCT d.id) FILTER (WHERE p.source_type = 'pdb')::text as n_pdb_reps,
+        count(DISTINCT d.id) FILTER (WHERE p.source_type <> 'pdb')::text as n_afdb_reps,
+        COALESCE(sum(ds.total_cys) FILTER (WHERE p.source_type = 'pdb'), 0)::text as pdb_total_cys,
+        COALESCE(sum(ds.total_cys) FILTER (WHERE p.source_type <> 'pdb'), 0)::text as afdb_total_cys,
+        COALESCE(sum(ds.n_disulfide) FILTER (WHERE p.source_type = 'pdb'), 0)::text as pdb_n_disulfide,
+        COALESCE(sum(ds.n_metal_binding) FILTER (WHERE p.source_type = 'pdb'), 0)::text as pdb_n_metal,
+        COALESCE(sum(ds.n_disulfide) FILTER (WHERE p.source_type <> 'pdb'), 0)::text as afdb_n_disulfide,
+        COALESCE(sum(ds.n_metal_binding) FILTER (WHERE p.source_type <> 'pdb'), 0)::text as afdb_n_metal
+     FROM cys_classification.domain_summary ds
+     JOIN ecod_commons.domains d ON ds.domain_id = d.id
+     JOIN ecod_commons.proteins p ON d.protein_id = p.id
+     JOIN ecod_commons.f_group_assignments fa ON ds.domain_id = fa.domain_id
+     JOIN ecod_commons.domain_clusters dc ON d.id = dc.domain_id
+     JOIN ecod_commons.clustering_runs cr ON dc.clustering_run_id = cr.id
+     LEFT JOIN ecod_rep.cluster hc ON fa.h_group_id = hc.id::text AND hc.type = 'H'
+     LEFT JOIN ecod_rep.cluster xc ON fa.x_group_id = xc.id::text AND xc.type = 'X'
+     WHERE cr.parameter_set_id = 2 AND dc.is_representative = TRUE
+     GROUP BY fa.h_group_id, hc.name, fa.x_group_id, xc.name
+     HAVING count(DISTINCT d.id) >= 1`,
+  );
+
+  return rows.map((r) => {
+    const pdbTotal = parseInt(r.pdb_total_cys);
+    const afdbTotal = parseInt(r.afdb_total_cys);
+    const pdbDis = parseInt(r.pdb_n_disulfide);
+    const pdbMet = parseInt(r.pdb_n_metal);
+    const afdbDis = parseInt(r.afdb_n_disulfide);
+    const afdbMet = parseInt(r.afdb_n_metal);
+    return {
+      hGroupId: r.h_group_id,
+      hGroupName: r.h_group_name,
+      xGroupId: r.x_group_id,
+      xGroupName: r.x_group_name,
+      nPdbReps: parseInt(r.n_pdb_reps),
+      nAfdbReps: parseInt(r.n_afdb_reps),
+      pdbTotalCys: pdbTotal,
+      afdbTotalCys: afdbTotal,
+      pdbDisulfidePct: pdbTotal > 0 ? (pdbDis / pdbTotal) * 100 : null,
+      pdbMetalPct: pdbTotal > 0 ? (pdbMet / pdbTotal) * 100 : null,
+      afdbDisulfidePct: afdbTotal > 0 ? (afdbDis / afdbTotal) * 100 : null,
+      afdbMetalPct: afdbTotal > 0 ? (afdbMet / afdbTotal) * 100 : null,
+    };
+  });
+}
+
+// ---- H-group detail (`/h-group/[id]`) ----
+
+export interface HGroupDetail extends HGroupSummary {
+  representatives: HGroupRepresentative[];
+}
+
+export interface HGroupRepresentative {
+  domainId: string;
+  domainDbId: number;
+  sourceType: string;
+  pdbId: string | null;
+  uniprotAcc: string | null;
+  fGroupId: string;
+  fGroupName: string;
+  totalCys: number;
+  nDisulfide: number;
+  nMetalBinding: number;
+  nUnclassified: number;
+}
+
+export async function getHGroupDetail(hGroupId: string): Promise<HGroupDetail | null> {
+  const summaryRow = await queryOne<{
+    h_group_id: string;
+    h_group_name: string;
+    x_group_id: string;
+    x_group_name: string;
+    n_pdb_reps: string;
+    n_afdb_reps: string;
+    pdb_total_cys: string;
+    afdb_total_cys: string;
+    pdb_n_disulfide: string;
+    pdb_n_metal: string;
+    afdb_n_disulfide: string;
+    afdb_n_metal: string;
+  }>(
+    `SELECT
+        fa.h_group_id,
+        COALESCE(hc.name, fa.h_group_id) as h_group_name,
+        fa.x_group_id,
+        COALESCE(xc.name, fa.x_group_id) as x_group_name,
+        count(DISTINCT d.id) FILTER (WHERE p.source_type = 'pdb')::text as n_pdb_reps,
+        count(DISTINCT d.id) FILTER (WHERE p.source_type <> 'pdb')::text as n_afdb_reps,
+        COALESCE(sum(ds.total_cys) FILTER (WHERE p.source_type = 'pdb'), 0)::text as pdb_total_cys,
+        COALESCE(sum(ds.total_cys) FILTER (WHERE p.source_type <> 'pdb'), 0)::text as afdb_total_cys,
+        COALESCE(sum(ds.n_disulfide) FILTER (WHERE p.source_type = 'pdb'), 0)::text as pdb_n_disulfide,
+        COALESCE(sum(ds.n_metal_binding) FILTER (WHERE p.source_type = 'pdb'), 0)::text as pdb_n_metal,
+        COALESCE(sum(ds.n_disulfide) FILTER (WHERE p.source_type <> 'pdb'), 0)::text as afdb_n_disulfide,
+        COALESCE(sum(ds.n_metal_binding) FILTER (WHERE p.source_type <> 'pdb'), 0)::text as afdb_n_metal
+     FROM cys_classification.domain_summary ds
+     JOIN ecod_commons.domains d ON ds.domain_id = d.id
+     JOIN ecod_commons.proteins p ON d.protein_id = p.id
+     JOIN ecod_commons.f_group_assignments fa ON ds.domain_id = fa.domain_id
+     JOIN ecod_commons.domain_clusters dc ON d.id = dc.domain_id
+     JOIN ecod_commons.clustering_runs cr ON dc.clustering_run_id = cr.id
+     LEFT JOIN ecod_rep.cluster hc ON fa.h_group_id = hc.id::text AND hc.type = 'H'
+     LEFT JOIN ecod_rep.cluster xc ON fa.x_group_id = xc.id::text AND xc.type = 'X'
+     WHERE cr.parameter_set_id = 2 AND dc.is_representative = TRUE
+       AND fa.h_group_id = $1
+     GROUP BY fa.h_group_id, hc.name, fa.x_group_id, xc.name`,
+    [hGroupId],
+  );
+
+  if (!summaryRow) return null;
+
+  const repRows = await query<{
+    domain_id: string;
+    domain_db_id: number;
+    source_type: string;
+    pdb_id: string | null;
+    uniprot_acc: string | null;
+    f_group_id: string;
+    f_group_name: string;
+    total_cys: number | null;
+    n_disulfide: number | null;
+    n_metal_binding: number | null;
+    n_unclassified: number | null;
+  }>(
+    `SELECT d.domain_id, d.id as domain_db_id, p.source_type, p.pdb_id, p.uniprot_acc,
+            fa.f_group_id,
+            COALESCE(fc.name, fa.f_group_id) as f_group_name,
+            ds.total_cys, ds.n_disulfide, ds.n_metal_binding, ds.n_unclassified
+     FROM ecod_commons.f_group_assignments fa
+     JOIN ecod_commons.domains d ON fa.domain_id = d.id
+     JOIN ecod_commons.proteins p ON d.protein_id = p.id
+     JOIN ecod_commons.domain_clusters dc ON d.id = dc.domain_id
+     JOIN ecod_commons.clustering_runs cr ON dc.clustering_run_id = cr.id
+     LEFT JOIN cys_classification.domain_summary ds ON d.id = ds.domain_id
+     LEFT JOIN ecod_rep.cluster fc ON fa.f_group_id = fc.id::text AND fc.type = 'F'
+     WHERE fa.h_group_id = $1 AND cr.parameter_set_id = 2 AND dc.is_representative = TRUE
+     ORDER BY p.source_type, ds.n_metal_binding DESC NULLS LAST, d.domain_id`,
+    [hGroupId],
+  );
+
+  const pdbTotal = parseInt(summaryRow.pdb_total_cys);
+  const afdbTotal = parseInt(summaryRow.afdb_total_cys);
+  const pdbDis = parseInt(summaryRow.pdb_n_disulfide);
+  const pdbMet = parseInt(summaryRow.pdb_n_metal);
+  const afdbDis = parseInt(summaryRow.afdb_n_disulfide);
+  const afdbMet = parseInt(summaryRow.afdb_n_metal);
+
+  return {
+    hGroupId: summaryRow.h_group_id,
+    hGroupName: summaryRow.h_group_name,
+    xGroupId: summaryRow.x_group_id,
+    xGroupName: summaryRow.x_group_name,
+    nPdbReps: parseInt(summaryRow.n_pdb_reps),
+    nAfdbReps: parseInt(summaryRow.n_afdb_reps),
+    pdbTotalCys: pdbTotal,
+    afdbTotalCys: afdbTotal,
+    pdbDisulfidePct: pdbTotal > 0 ? (pdbDis / pdbTotal) * 100 : null,
+    pdbMetalPct: pdbTotal > 0 ? (pdbMet / pdbTotal) * 100 : null,
+    afdbDisulfidePct: afdbTotal > 0 ? (afdbDis / afdbTotal) * 100 : null,
+    afdbMetalPct: afdbTotal > 0 ? (afdbMet / afdbTotal) * 100 : null,
+    representatives: repRows.map((r) => ({
+      domainId: r.domain_id,
+      domainDbId: r.domain_db_id,
+      sourceType: r.source_type,
+      pdbId: r.pdb_id,
+      uniprotAcc: r.uniprot_acc,
+      fGroupId: r.f_group_id,
+      fGroupName: r.f_group_name,
+      totalCys: r.total_cys ?? 0,
+      nDisulfide: r.n_disulfide ?? 0,
+      nMetalBinding: r.n_metal_binding ?? 0,
+      nUnclassified: r.n_unclassified ?? 0,
+    })),
+  };
+}
+
+// ---- Source-type breakdown (Fig S2) ----
+
+export interface SourceTypeBreakdown {
+  sourceType: string;
+  nDomains: number;
+  nDisulfide: number;
+  nMetal: number;
+  nUnclassified: number;
+}
+
+export async function getSourceTypeBreakdown(): Promise<SourceTypeBreakdown[]> {
+  const rows = await query<{
+    source_type: string;
+    n_domains: string;
+    n_disulfide: string;
+    n_metal: string;
+    n_unclassified: string;
+  }>(
+    `SELECT p.source_type,
+            count(DISTINCT ds.domain_id)::text as n_domains,
+            COALESCE(sum(ds.n_disulfide), 0)::text as n_disulfide,
+            COALESCE(sum(ds.n_metal_binding), 0)::text as n_metal,
+            COALESCE(sum(ds.n_unclassified), 0)::text as n_unclassified
+     FROM cys_classification.domain_summary ds
+     JOIN ecod_commons.domains d ON ds.domain_id = d.id
+     JOIN ecod_commons.proteins p ON d.protein_id = p.id
+     GROUP BY p.source_type
+     ORDER BY count(DISTINCT ds.domain_id) DESC`,
+  );
+
+  return rows.map((r) => ({
+    sourceType: r.source_type,
+    nDomains: parseInt(r.n_domains),
+    nDisulfide: parseInt(r.n_disulfide),
+    nMetal: parseInt(r.n_metal),
+    nUnclassified: parseInt(r.n_unclassified),
+  }));
+}
+
 // ---- Confidence Distribution ----
 
 export interface ConfidenceBucket {

@@ -8,13 +8,13 @@ interface ClassificationPieChartProps {
   nUnclassified: number;
 }
 
-const COLORS = ['#F59E0B', '#0D9488', '#9CA3AF'];
+const COLORS = ['#DC2626', '#16A34A', '#9CA3AF'];
 
 export default function ClassificationPieChart({ nDisulfide, nMetalBinding, nUnclassified }: ClassificationPieChartProps) {
   const data = [
     { name: 'Disulfide', value: nDisulfide },
-    { name: 'Metal-Binding', value: nMetalBinding },
-    { name: 'Unclassified', value: nUnclassified },
+    { name: 'Metal-binding', value: nMetalBinding },
+    { name: 'Free thiol', value: nUnclassified },
   ];
 
   const total = nDisulfide + nMetalBinding + nUnclassified;

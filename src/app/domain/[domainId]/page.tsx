@@ -97,22 +97,22 @@ export default async function DomainPage({ params }: DomainPageProps) {
               </div>
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-2 text-sm">
-                  <span className="w-3 h-3 rounded-sm bg-amber-400 inline-block" />
+                  <span className="w-3 h-3 rounded-sm bg-red-500 inline-block" />
                   Disulfide
                 </span>
-                <span className="font-medium text-amber-600 dark:text-amber-400">{nDisulfide}</span>
+                <span className="font-medium text-red-600 dark:text-red-400">{nDisulfide}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-2 text-sm">
-                  <span className="w-3 h-3 rounded-sm bg-teal-500 inline-block" />
-                  Metal-Binding
+                  <span className="w-3 h-3 rounded-sm bg-green-500 inline-block" />
+                  Metal-binding
                 </span>
-                <span className="font-medium text-teal-600 dark:text-teal-400">{nMetal}</span>
+                <span className="font-medium text-green-600 dark:text-green-400">{nMetal}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-2 text-sm">
                   <span className="w-3 h-3 rounded-sm bg-gray-400 inline-block" />
-                  Unclassified
+                  Free thiol
                 </span>
                 <span className="font-medium text-gray-500">{nUnclassified}</span>
               </div>

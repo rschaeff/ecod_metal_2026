@@ -21,8 +21,8 @@ function ProbBar({ neg, dis, met }: { neg: number; dis: number; met: number }) {
   return (
     <div className="flex h-4 w-24 rounded overflow-hidden" title={`Neg: ${neg.toFixed(2)}, Dis: ${dis.toFixed(2)}, Met: ${met.toFixed(2)}`}>
       <div className="bg-gray-300 dark:bg-gray-500" style={{ width: `${negPct}%` }} />
-      <div className="bg-amber-400" style={{ width: `${disPct}%` }} />
-      <div className="bg-teal-500" style={{ width: `${metPct}%` }} />
+      <div className="bg-red-500" style={{ width: `${disPct}%` }} />
+      <div className="bg-green-500" style={{ width: `${metPct}%` }} />
     </div>
   );
 }
@@ -62,8 +62,8 @@ export default function DomainClient({ sequence, classifications, evidence }: Do
                     <tr key={p.cysPosition}>
                       <td className="px-3 py-2 font-mono">{p.cysPosition}</td>
                       <td className="px-3 py-2 text-gray-500">{p.negProb.toFixed(3)}</td>
-                      <td className="px-3 py-2 text-amber-600 dark:text-amber-400">{p.disProb.toFixed(3)}</td>
-                      <td className="px-3 py-2 text-teal-600 dark:text-teal-400">{p.metProb.toFixed(3)}</td>
+                      <td className="px-3 py-2 text-red-600 dark:text-red-400">{p.disProb.toFixed(3)}</td>
+                      <td className="px-3 py-2 text-green-600 dark:text-green-400">{p.metProb.toFixed(3)}</td>
                       <td className="px-3 py-2">
                         <ProbBar neg={p.negProb} dis={p.disProb} met={p.metProb} />
                       </td>
@@ -77,8 +77,8 @@ export default function DomainClient({ sequence, classifications, evidence }: Do
             </table>
             <div className="flex gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-gray-300 dark:bg-gray-500 inline-block" /> Neg</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-amber-400 inline-block" /> Dis</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-teal-500 inline-block" /> Met</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-red-500 inline-block" /> Dis</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-green-500 inline-block" /> Met</span>
             </div>
           </EvidencePanel>
         )}
@@ -158,7 +158,7 @@ export default function DomainClient({ sequence, classifications, evidence }: Do
                     <td className="px-3 py-2 font-medium">{m.metal}</td>
                     <td className="px-3 py-2">
                       {m.cofactor ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
                           {m.cofactor}
                         </span>
                       ) : (

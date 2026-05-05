@@ -11,8 +11,8 @@ export default function FamilyStackedBar({ domains }: FamilyStackedBarProps) {
   const data = domains.slice(0, 50).map((d) => ({
     name: d.domainId,
     Disulfide: d.nDisulfide,
-    'Metal-Binding': d.nMetalBinding,
-    Unclassified: d.nUnclassified,
+    'Metal-binding': d.nMetalBinding,
+    'Free thiol': d.nUnclassified,
   }));
 
   if (data.length === 0) return null;
@@ -26,9 +26,9 @@ export default function FamilyStackedBar({ domains }: FamilyStackedBarProps) {
             <YAxis label={{ value: 'Cysteines', angle: -90, position: 'insideLeft' }} />
             <Tooltip />
             <Legend />
-            <Bar dataKey="Disulfide" stackId="a" fill="#F59E0B" />
-            <Bar dataKey="Metal-Binding" stackId="a" fill="#0D9488" />
-            <Bar dataKey="Unclassified" stackId="a" fill="#9CA3AF" />
+            <Bar dataKey="Disulfide" stackId="a" fill="#DC2626" />
+            <Bar dataKey="Metal-binding" stackId="a" fill="#16A34A" />
+            <Bar dataKey="Free thiol" stackId="a" fill="#9CA3AF" />
           </BarChart>
         </ResponsiveContainer>
       </div>

@@ -20,9 +20,9 @@
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  /* Classification colors */
-  --cys-disulfide: #F59E0B;
-  --cys-metal: #0D9488;
+  /* Classification colors: red disulfide, green metal, grey free thiol */
+  --cys-disulfide: #DC2626;
+  --cys-metal: #16A34A;
   --cys-unclassified: #9CA3AF;
 }
 
@@ -45,8 +45,8 @@
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
 
-  --cys-disulfide: #FBBF24;
-  --cys-metal: #2DD4BF;
+  --cys-disulfide: #F87171;
+  --cys-metal: #4ADE80;
   --cys-unclassified: #6B7280;
 }
 

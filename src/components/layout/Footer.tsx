@@ -9,12 +9,12 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-              Cysteine Classification Browser
+              TriCyp
             </h3>
             <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-              ESM2-based classification of cysteine residues across ECOD F70 representative
-              domains as disulfide-bonded, metal-binding, or unclassified, with structural
-              corroboration from PDB annotations.
+              Three-state cysteine classification across ECOD F70 representative domains —
+              disulfide-bonded, metal-binding, or free thiol — combining ESM2 predictions
+              with PDB structural evidence.
             </p>
           </div>
 

@@ -9,9 +9,15 @@ interface SequenceViewerProps {
 }
 
 const COLORS: Record<string, { bg: string; text: string }> = {
-  DISULFIDE: { bg: 'bg-amber-200 dark:bg-amber-800', text: 'text-amber-900 dark:text-amber-100' },
-  METAL_BINDING: { bg: 'bg-teal-200 dark:bg-teal-800', text: 'text-teal-900 dark:text-teal-100' },
+  DISULFIDE: { bg: 'bg-red-200 dark:bg-red-800', text: 'text-red-900 dark:text-red-100' },
+  METAL_BINDING: { bg: 'bg-green-200 dark:bg-green-800', text: 'text-green-900 dark:text-green-100' },
   UNCLASSIFIED: { bg: 'bg-gray-200 dark:bg-gray-600', text: 'text-gray-700 dark:text-gray-200' },
+};
+
+const CLASS_LABELS: Record<string, string> = {
+  DISULFIDE: 'Disulfide',
+  METAL_BINDING: 'Metal-binding',
+  UNCLASSIFIED: 'Free thiol',
 };
 
 export default function SequenceViewer({ sequence, classifications }: SequenceViewerProps) {
@@ -81,16 +87,16 @@ export default function SequenceViewer({ sequence, classifications }: SequenceVi
       {/* Legend */}
       <div className="flex gap-4 mt-2 text-xs text-gray-600 dark:text-gray-400">
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-sm bg-amber-200 dark:bg-amber-800 inline-block" />
+          <span className="w-3 h-3 rounded-sm bg-red-200 dark:bg-red-800 inline-block" />
           Disulfide
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-sm bg-teal-200 dark:bg-teal-800 inline-block" />
-          Metal-Binding
+          <span className="w-3 h-3 rounded-sm bg-green-200 dark:bg-green-800 inline-block" />
+          Metal-binding
         </span>
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded-sm bg-gray-200 dark:bg-gray-600 inline-block" />
-          Unclassified
+          Free thiol
         </span>
       </div>
 
@@ -104,7 +110,7 @@ export default function SequenceViewer({ sequence, classifications }: SequenceVi
             Cys {tooltip.record.cysPosition}
           </p>
           <p className="text-gray-600 dark:text-gray-400">
-            Classification: <span className="font-medium">{tooltip.record.classification.replace('_', '-')}</span>
+            Classification: <span className="font-medium">{CLASS_LABELS[tooltip.record.classification] ?? tooltip.record.classification}</span>
           </p>
           <p className="text-gray-600 dark:text-gray-400">
             Confidence: {tooltip.record.confidence.toFixed(2)}

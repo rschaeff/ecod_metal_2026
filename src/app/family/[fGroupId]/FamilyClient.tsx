@@ -131,7 +131,7 @@ export default function FamilyClient({ fGroupId, domains, page, totalPages, tota
                   { key: 'total_cys', label: 'Total Cys' },
                   { key: 'n_disulfide', label: 'Disulfide' },
                   { key: 'n_metal_binding', label: 'Metal' },
-                  { key: 'n_unclassified', label: 'Unclassified' },
+                  { key: 'n_unclassified', label: 'Free thiol' },
                 ].map((col) => (
                   <th
                     key={col.key}
@@ -156,8 +156,8 @@ export default function FamilyClient({ fGroupId, domains, page, totalPages, tota
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 uppercase">{d.sourceType}</td>
                   <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-medium">{d.totalCys}</td>
-                  <td className="px-4 py-3 text-sm text-amber-600 dark:text-amber-400">{d.nDisulfide}</td>
-                  <td className="px-4 py-3 text-sm text-teal-600 dark:text-teal-400">{d.nMetalBinding}</td>
+                  <td className="px-4 py-3 text-sm text-red-600 dark:text-red-400">{d.nDisulfide}</td>
+                  <td className="px-4 py-3 text-sm text-green-600 dark:text-green-400">{d.nMetalBinding}</td>
                   <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{d.nUnclassified}</td>
                 </tr>
               ))}

@@ -12,11 +12,11 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Cysteine Classification Browser',
-    template: '%s | CysBrowser',
+    default: 'TriCyp — Three-state cysteine classification',
+    template: '%s | TriCyp',
   },
   description:
-    'Browse cysteine residue classifications (disulfide, metal-binding, unclassified) across ECOD F70 representative protein domains.',
+    'TriCyp: deposition site for three-state cysteine classification (disulfide, metal-binding, free thiol) across ~700,000 ECOD F70 representative protein domains.',
 };
 
 export default function RootLayout({

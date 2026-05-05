@@ -17,8 +17,8 @@ export default function ConfidenceBarChart({ data }: ConfidenceBarChartProps) {
     return {
       bucket,
       Disulfide: dis?.count || 0,
-      'Metal-Binding': met?.count || 0,
-      Unclassified: unc?.count || 0,
+      'Metal-binding': met?.count || 0,
+      'Free thiol': unc?.count || 0,
     };
   });
 
@@ -29,9 +29,9 @@ export default function ConfidenceBarChart({ data }: ConfidenceBarChartProps) {
         <YAxis tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)} />
         <Tooltip formatter={(value: number) => value.toLocaleString()} />
         <Legend />
-        <Bar dataKey="Disulfide" stackId="a" fill="#F59E0B" />
-        <Bar dataKey="Metal-Binding" stackId="a" fill="#0D9488" />
-        <Bar dataKey="Unclassified" stackId="a" fill="#9CA3AF" />
+        <Bar dataKey="Disulfide" stackId="a" fill="#DC2626" />
+        <Bar dataKey="Metal-binding" stackId="a" fill="#16A34A" />
+        <Bar dataKey="Free thiol" stackId="a" fill="#9CA3AF" />
       </BarChart>
     </ResponsiveContainer>
   );

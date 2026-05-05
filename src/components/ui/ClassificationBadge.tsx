@@ -4,15 +4,15 @@ interface ClassificationBadgeProps {
 }
 
 const styles = {
-  DISULFIDE: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  METAL_BINDING: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300',
+  DISULFIDE: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  METAL_BINDING: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
   UNCLASSIFIED: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
 };
 
 const labels = {
   DISULFIDE: 'Disulfide',
-  METAL_BINDING: 'Metal-Binding',
-  UNCLASSIFIED: 'Unclassified',
+  METAL_BINDING: 'Metal-binding',
+  UNCLASSIFIED: 'Free thiol',
 };
 
 export default function ClassificationBadge({ classification, size = 'sm' }: ClassificationBadgeProps) {
