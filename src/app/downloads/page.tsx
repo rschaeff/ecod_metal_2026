@@ -8,6 +8,7 @@ import {
   type DownloadEntry,
 } from '@/lib/downloads';
 import { PAPER_REF } from '@/lib/paperData';
+import { RATE_LIMIT_CONFIG } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -309,7 +310,19 @@ export default async function DownloadsPage() {
             {`{ success: boolean, data?: …, error?: { code, message } }`}
           </code>
           {' '}— so callers can branch on a single field. No authentication
-          required; expect a basic per-IP rate limit on the public endpoint.
+          required.
+        </p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 max-w-3xl">
+          <strong>Rate limit:</strong>{' '}
+          <span className="font-mono">
+            {RATE_LIMIT_CONFIG.limit} requests / {Math.round(RATE_LIMIT_CONFIG.windowMs / 1000)} s per IP
+          </span>
+          . Responses include{' '}
+          <code className="font-mono">X-RateLimit-Limit</code>,{' '}
+          <code className="font-mono">X-RateLimit-Remaining</code>, and{' '}
+          <code className="font-mono">X-RateLimit-Reset</code> headers.
+          Exceeding the limit returns <code className="font-mono">429</code>{' '}
+          with a <code className="font-mono">Retry-After</code> header.
         </p>
         <div className="space-y-3">
           {API_ROUTES.map((r) => (
