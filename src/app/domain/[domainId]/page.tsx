@@ -13,6 +13,23 @@ interface DomainPageProps {
   params: Promise<{ domainId: string }>;
 }
 
+// Cheap HEAD probe so the page can render a "structure unavailable"
+// fallback when an AFDB-source domain points at an obsolete UniProt
+// accession (the AFDB CIF endpoint 404s, the viewer iframe loads
+// blank, and the user sees a broken-looking panel). Cached at the
+// fetch layer so repeat loads of the same domain skip the network.
+async function probeAfdbExists(uniprotAcc: string): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `https://alphafold.ebi.ac.uk/files/AF-${uniprotAcc}-F1-model_v6.cif`,
+      { method: 'HEAD', next: { revalidate: 3600 } },
+    );
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function generateMetadata({ params }: DomainPageProps) {
   const { domainId } = await params;
   const info = await getDomainDetail(domainId);
@@ -31,6 +48,14 @@ export default async function DomainPage({ params }: DomainPageProps) {
     getDomainClassifications(domainInfo.id),
     getDomainEvidence(domainInfo.id),
   ]);
+
+  // Probe AFDB only for AFDB-source domains; PDB-source domains use
+  // their own structure path which doesn't have the obsolete-accession
+  // problem the same way.
+  const afdbAvailable =
+    domainInfo.sourceType !== 'pdb' && domainInfo.uniprotAcc
+      ? await probeAfdbExists(domainInfo.uniprotAcc)
+      : true;
 
   const nDisulfide = classifications.filter((c) => c.classification === 'DISULFIDE').length;
   const nMetal = classifications.filter((c) => c.classification === 'METAL_BINDING').length;
@@ -114,7 +139,7 @@ export default async function DomainPage({ params }: DomainPageProps) {
                   disulfideCysteines={disulfideCysParam}
                   className="w-full h-72"
                 />
-              ) : domainInfo.uniprotAcc ? (
+              ) : domainInfo.uniprotAcc && afdbAvailable ? (
                 <StructureViewer
                   afId={domainInfo.uniprotAcc}
                   range={domainInfo.rangeDefinition}
@@ -123,6 +148,22 @@ export default async function DomainPage({ params }: DomainPageProps) {
                   disulfideCysteines={disulfideCysParam}
                   className="w-full h-72"
                 />
+              ) : domainInfo.uniprotAcc ? (
+                <div className="p-6 h-72 flex flex-col items-center justify-center text-center text-sm text-gray-600 dark:text-gray-400">
+                  <p className="font-medium text-gray-700 dark:text-gray-300">Structure unavailable</p>
+                  <p className="mt-1 max-w-xs">
+                    The AlphaFold model for{' '}
+                    <a
+                      href={`https://www.uniprot.org/uniprotkb/${domainInfo.uniprotAcc}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono underline-offset-2 hover:underline text-amber-600 dark:text-amber-400"
+                    >
+                      {domainInfo.uniprotAcc}
+                    </a>{' '}
+                    is not currently served by AFDB; the UniProt accession may be obsolete or merged.
+                  </p>
+                </div>
               ) : null}
             </div>
           )}

@@ -17,15 +17,23 @@
 \timing on
 
 \echo 'Generating cysteine-classifications.tsv ...'
+-- Per-class probabilities (p_neg / p_dis / p_met) are extracted from
+-- cysteine_classifications.evidence, which carries them as a single
+-- 'esm2_neg:X;esm2_dis:Y;esm2_met:Z' string and is the only source
+-- consistent with the published classification call. The separate
+-- cys_classification.esm2_predictions table is an earlier / different
+-- inference run whose probabilities disagree with the classifications.
+-- Rows where evidence='no_esm2' (structural-evidence-only calls) emit
+-- empty probability cells.
 \o :cys_out
 COPY (
   SELECT
     d.domain_id,
     cc.cys_position,
     cc.classification,
-    esm.neg_prob AS p_neg,
-    esm.dis_prob AS p_dis,
-    esm.met_prob AS p_met,
+    (regexp_match(cc.evidence, 'esm2_neg:([\d.]+);esm2_dis:([\d.]+);esm2_met:([\d.]+)'))[1]::real AS p_neg,
+    (regexp_match(cc.evidence, 'esm2_neg:([\d.]+);esm2_dis:([\d.]+);esm2_met:([\d.]+)'))[2]::real AS p_dis,
+    (regexp_match(cc.evidence, 'esm2_neg:([\d.]+);esm2_dis:([\d.]+);esm2_met:([\d.]+)'))[3]::real AS p_met,
     cc.evidence AS evidence_tags,
     fa.f_group_id,
     fa.h_group_id,
@@ -37,9 +45,6 @@ COPY (
   JOIN ecod_commons.domains d              ON cc.domain_id = d.id
   JOIN ecod_commons.proteins p             ON d.protein_id = p.id
   JOIN ecod_commons.f_group_assignments fa ON cc.domain_id = fa.domain_id
-  LEFT JOIN cys_classification.esm2_predictions esm
-         ON esm.domain_id = cc.domain_id
-        AND esm.cys_position = cc.cys_position
   ORDER BY d.domain_id, cc.cys_position
 ) TO STDOUT WITH (FORMAT csv, DELIMITER E'\t', HEADER true);
 \o

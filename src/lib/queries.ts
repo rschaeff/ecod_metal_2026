@@ -1038,15 +1038,38 @@ export async function getDomainClassifications(domainDbId: number): Promise<Cyst
 }
 
 export async function getDomainEvidence(domainDbId: number): Promise<DomainEvidence> {
-  // ESM2 predictions may not exist yet — handle gracefully
-  let esm2Rows: { domain_id: number; cys_position: number; neg_prob: number; dis_prob: number; met_prob: number }[] = [];
-  try {
-    esm2Rows = await query<{
-      domain_id: number; cys_position: number; neg_prob: number; dis_prob: number; met_prob: number;
-    }>(`SELECT * FROM cys_classification.esm2_predictions WHERE domain_id = $1 ORDER BY cys_position`, [domainDbId]);
-  } catch {
-    // Table doesn't exist yet
-  }
+  // Per-class probabilities are taken from cysteine_classifications.evidence,
+  // which carries them as a single string ('esm2_neg:X;esm2_dis:Y;esm2_met:Z'
+  // or 'no_esm2'). The separate cys_classification.esm2_predictions table
+  // is a different / earlier inference run whose probabilities don't
+  // match the published classifications — using it produces sub-threshold
+  // probabilities under METAL_BINDING / DISULFIDE badges, which the
+  // domain page used to render. Parsing the evidence string keeps the
+  // displayed probabilities self-consistent with the classification.
+  const evidenceRows = await query<{
+    cys_position: number;
+    evidence: string | null;
+  }>(
+    `SELECT cys_position, evidence
+       FROM cys_classification.cysteine_classifications
+      WHERE domain_id = $1
+      ORDER BY cys_position`,
+    [domainDbId],
+  );
+
+  const ESM2_PROB_RE = /esm2_neg:([\d.]+);esm2_dis:([\d.]+);esm2_met:([\d.]+)/;
+  const esm2Rows = evidenceRows
+    .map((r) => {
+      const m = r.evidence ? ESM2_PROB_RE.exec(r.evidence) : null;
+      if (!m) return null;
+      return {
+        cys_position: r.cys_position,
+        neg_prob: parseFloat(m[1]),
+        dis_prob: parseFloat(m[2]),
+        met_prob: parseFloat(m[3]),
+      };
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null);
 
   const [disulfideRows, ssbondRows, metalLinkRows] = await Promise.all([
     query<{
@@ -1068,7 +1091,7 @@ export async function getDomainEvidence(domainDbId: number): Promise<DomainEvide
   ]);
 
   const esm2Predictions: Esm2Prediction[] = esm2Rows.map((r) => ({
-    domainId: r.domain_id, cysPosition: r.cys_position,
+    domainId: domainDbId, cysPosition: r.cys_position,
     negProb: r.neg_prob, disProb: r.dis_prob, metProb: r.met_prob,
   }));
 
