@@ -14,6 +14,13 @@ import type {
   SearchResult,
 } from '@/types/cysteine';
 
+// Published manuscript inference scope. Anywhere a query needs the F70
+// representative set as the analytical universe, it must filter on this
+// run rather than ecod_commons.domain_clusters + clustering_runs (which
+// represent the *live* F70 set and have drifted from the published scope
+// by ~3,275 domains). See DB_CONTRACT.md §2.12.
+const PAPER_V1_RUN_ID = 1;
+
 // ---- Dashboard ----
 
 export async function getDashboardSummary(): Promise<DashboardSummary> {
@@ -241,6 +248,11 @@ export interface HGroupSummary {
 }
 
 export async function getHGroupSummary(): Promise<HGroupSummary[]> {
+  // Reads the materialized view created by
+  // scripts/migrations/001_hgroup_summary.sql. The MV joins through
+  // cys_classification.esm2_run_domains so the rollup is pinned to the
+  // paper-v1 inference scope (DB_CONTRACT §2.12) rather than the live
+  // F70 set, which has already drifted by ~3,275 domains.
   const rows = await query<{
     h_group_id: string;
     h_group_name: string;
@@ -256,29 +268,19 @@ export async function getHGroupSummary(): Promise<HGroupSummary[]> {
     afdb_n_metal: string;
   }>(
     `SELECT
-        fa.h_group_id,
-        COALESCE(hc.name, fa.h_group_id) as h_group_name,
-        fa.x_group_id,
-        COALESCE(xc.name, fa.x_group_id) as x_group_name,
-        count(DISTINCT d.id) FILTER (WHERE p.source_type = 'pdb')::text as n_pdb_reps,
-        count(DISTINCT d.id) FILTER (WHERE p.source_type <> 'pdb')::text as n_afdb_reps,
-        COALESCE(sum(ds.total_cys) FILTER (WHERE p.source_type = 'pdb'), 0)::text as pdb_total_cys,
-        COALESCE(sum(ds.total_cys) FILTER (WHERE p.source_type <> 'pdb'), 0)::text as afdb_total_cys,
-        COALESCE(sum(ds.n_disulfide) FILTER (WHERE p.source_type = 'pdb'), 0)::text as pdb_n_disulfide,
-        COALESCE(sum(ds.n_metal_binding) FILTER (WHERE p.source_type = 'pdb'), 0)::text as pdb_n_metal,
-        COALESCE(sum(ds.n_disulfide) FILTER (WHERE p.source_type <> 'pdb'), 0)::text as afdb_n_disulfide,
-        COALESCE(sum(ds.n_metal_binding) FILTER (WHERE p.source_type <> 'pdb'), 0)::text as afdb_n_metal
-     FROM cys_classification.domain_summary ds
-     JOIN ecod_commons.domains d ON ds.domain_id = d.id
-     JOIN ecod_commons.proteins p ON d.protein_id = p.id
-     JOIN ecod_commons.f_group_assignments fa ON ds.domain_id = fa.domain_id
-     JOIN ecod_commons.domain_clusters dc ON d.id = dc.domain_id
-     JOIN ecod_commons.clustering_runs cr ON dc.clustering_run_id = cr.id
-     LEFT JOIN ecod_rep.cluster hc ON fa.h_group_id = hc.id::text AND hc.type = 'H'
-     LEFT JOIN ecod_rep.cluster xc ON fa.x_group_id = xc.id::text AND xc.type = 'X'
-     WHERE cr.parameter_set_id = 2 AND dc.is_representative = TRUE
-     GROUP BY fa.h_group_id, hc.name, fa.x_group_id, xc.name
-     HAVING count(DISTINCT d.id) >= 1`,
+        h_group_id,
+        h_group_name,
+        x_group_id,
+        x_group_name,
+        n_pdb_reps::text       AS n_pdb_reps,
+        n_afdb_reps::text      AS n_afdb_reps,
+        pdb_total_cys::text    AS pdb_total_cys,
+        afdb_total_cys::text   AS afdb_total_cys,
+        pdb_n_disulfide::text  AS pdb_n_disulfide,
+        pdb_n_metal::text      AS pdb_n_metal,
+        afdb_n_disulfide::text AS afdb_n_disulfide,
+        afdb_n_metal::text     AS afdb_n_metal
+     FROM cys_classification.hgroup_summary`,
   );
 
   return rows.map((r) => {
@@ -361,15 +363,12 @@ export async function getXGroupDetail(xGroupId: string): Promise<XGroupDetail | 
         COALESCE(sum(ds.n_metal_binding), 0)::text AS n_metal_binding,
         COALESCE(sum(ds.n_unclassified), 0)::text AS n_unclassified
      FROM cys_classification.domain_summary ds
+     JOIN cys_classification.esm2_run_domains rd ON rd.domain_id = ds.domain_id AND rd.run_id = ${PAPER_V1_RUN_ID}
      JOIN ecod_commons.domains d ON ds.domain_id = d.id
      JOIN ecod_commons.proteins p ON d.protein_id = p.id
      JOIN ecod_commons.f_group_assignments fa ON ds.domain_id = fa.domain_id
-     JOIN ecod_commons.domain_clusters dc ON d.id = dc.domain_id
-     JOIN ecod_commons.clustering_runs cr ON dc.clustering_run_id = cr.id
      LEFT JOIN ecod_rep.cluster hc ON fa.h_group_id = hc.id::text AND hc.type = 'H'
-     WHERE cr.parameter_set_id = 2
-       AND dc.is_representative = TRUE
-       AND fa.x_group_id = $1
+     WHERE fa.x_group_id = $1
      GROUP BY fa.h_group_id, hc.name
      HAVING count(DISTINCT d.id) >= 1
      ORDER BY (count(DISTINCT d.id)) DESC, fa.h_group_id`,
@@ -478,15 +477,13 @@ export async function getHGroupDetail(hGroupId: string): Promise<HGroupDetail | 
         COALESCE(sum(ds.n_disulfide) FILTER (WHERE p.source_type <> 'pdb'), 0)::text as afdb_n_disulfide,
         COALESCE(sum(ds.n_metal_binding) FILTER (WHERE p.source_type <> 'pdb'), 0)::text as afdb_n_metal
      FROM cys_classification.domain_summary ds
+     JOIN cys_classification.esm2_run_domains rd ON rd.domain_id = ds.domain_id AND rd.run_id = ${PAPER_V1_RUN_ID}
      JOIN ecod_commons.domains d ON ds.domain_id = d.id
      JOIN ecod_commons.proteins p ON d.protein_id = p.id
      JOIN ecod_commons.f_group_assignments fa ON ds.domain_id = fa.domain_id
-     JOIN ecod_commons.domain_clusters dc ON d.id = dc.domain_id
-     JOIN ecod_commons.clustering_runs cr ON dc.clustering_run_id = cr.id
      LEFT JOIN ecod_rep.cluster hc ON fa.h_group_id = hc.id::text AND hc.type = 'H'
      LEFT JOIN ecod_rep.cluster xc ON fa.x_group_id = xc.id::text AND xc.type = 'X'
-     WHERE cr.parameter_set_id = 2 AND dc.is_representative = TRUE
-       AND fa.h_group_id = $1
+     WHERE fa.h_group_id = $1
      GROUP BY fa.h_group_id, hc.name, fa.x_group_id, xc.name`,
     [hGroupId],
   );
@@ -514,13 +511,12 @@ export async function getHGroupDetail(hGroupId: string): Promise<HGroupDetail | 
             COALESCE(fc.name, fa.f_group_id) as f_group_name,
             ds.total_cys, ds.n_disulfide, ds.n_metal_binding, ds.n_unclassified
      FROM ecod_commons.f_group_assignments fa
+     JOIN cys_classification.esm2_run_domains rd ON rd.domain_id = fa.domain_id AND rd.run_id = ${PAPER_V1_RUN_ID}
      JOIN ecod_commons.domains d ON fa.domain_id = d.id
      JOIN ecod_commons.proteins p ON d.protein_id = p.id
-     JOIN ecod_commons.domain_clusters dc ON d.id = dc.domain_id
-     JOIN ecod_commons.clustering_runs cr ON dc.clustering_run_id = cr.id
      LEFT JOIN cys_classification.domain_summary ds ON d.id = ds.domain_id
      LEFT JOIN ecod_rep.cluster fc ON fa.f_group_id = fc.id::text AND fc.type = 'F'
-     WHERE fa.h_group_id = $1 AND cr.parameter_set_id = 2 AND dc.is_representative = TRUE
+     WHERE fa.h_group_id = $1
      ORDER BY p.source_type, ds.n_metal_binding DESC NULLS LAST, d.domain_id`,
     [hGroupId],
   );
@@ -795,9 +791,8 @@ export async function getFamilyInfo(fGroupId: string): Promise<FamilyInfo | null
               COALESCE(xc.name, fa.x_group_id) as x_group_name,
               (SELECT count(*)
                FROM ecod_commons.f_group_assignments fa2
-               JOIN ecod_commons.domain_clusters dc ON fa2.domain_id = dc.domain_id
-               JOIN ecod_commons.clustering_runs cr ON dc.clustering_run_id = cr.id
-               WHERE fa2.f_group_id = $1 AND cr.parameter_set_id = 2 AND dc.is_representative = TRUE
+               JOIN cys_classification.esm2_run_domains rd ON rd.domain_id = fa2.domain_id AND rd.run_id = ${PAPER_V1_RUN_ID}
+               WHERE fa2.f_group_id = $1
               )::text as domain_count
        FROM ecod_commons.f_group_assignments fa
        LEFT JOIN ecod_rep.cluster fc ON fa.f_group_id = fc.id::text AND fc.type = 'F'
@@ -867,10 +862,9 @@ export async function getFamilyDomains(
     queryOne<{ count: string }>(
       `SELECT count(*)::text as count
        FROM ecod_commons.f_group_assignments fa
+       JOIN cys_classification.esm2_run_domains rd ON rd.domain_id = fa.domain_id AND rd.run_id = ${PAPER_V1_RUN_ID}
        JOIN ecod_commons.domains d ON fa.domain_id = d.id
-       JOIN ecod_commons.domain_clusters dc ON d.id = dc.domain_id
-       JOIN ecod_commons.clustering_runs cr ON dc.clustering_run_id = cr.id
-       WHERE fa.f_group_id = $1 AND cr.parameter_set_id = 2 AND dc.is_representative = TRUE`,
+       WHERE fa.f_group_id = $1`,
       [fGroupId]
     ),
     query<{
@@ -886,12 +880,11 @@ export async function getFamilyDomains(
       `SELECT d.domain_id, d.id as domain_db_id, p.source_type, p.pdb_id,
               ds.total_cys, ds.n_disulfide, ds.n_metal_binding, ds.n_unclassified
        FROM ecod_commons.f_group_assignments fa
+       JOIN cys_classification.esm2_run_domains rd ON rd.domain_id = fa.domain_id AND rd.run_id = ${PAPER_V1_RUN_ID}
        JOIN ecod_commons.domains d ON fa.domain_id = d.id
        JOIN ecod_commons.proteins p ON d.protein_id = p.id
-       JOIN ecod_commons.domain_clusters dc ON d.id = dc.domain_id
-       JOIN ecod_commons.clustering_runs cr ON dc.clustering_run_id = cr.id
        LEFT JOIN cys_classification.domain_summary ds ON d.id = ds.domain_id
-       WHERE fa.f_group_id = $1 AND cr.parameter_set_id = 2 AND dc.is_representative = TRUE
+       WHERE fa.f_group_id = $1
        ORDER BY ${orderCol} ${orderDir}
        LIMIT $2 OFFSET $3`,
       [fGroupId, limit, offset]

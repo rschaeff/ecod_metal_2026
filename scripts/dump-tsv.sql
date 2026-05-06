@@ -32,16 +32,14 @@ COPY (
     fa.x_group_id,
     p.source_type
   FROM cys_classification.cysteine_classifications cc
+  JOIN cys_classification.esm2_run_domains rd
+       ON rd.domain_id = cc.domain_id AND rd.run_id = 1  -- paper-v1
   JOIN ecod_commons.domains d              ON cc.domain_id = d.id
   JOIN ecod_commons.proteins p             ON d.protein_id = p.id
   JOIN ecod_commons.f_group_assignments fa ON cc.domain_id = fa.domain_id
-  JOIN ecod_commons.domain_clusters dc     ON d.id = dc.domain_id
-  JOIN ecod_commons.clustering_runs cr     ON dc.clustering_run_id = cr.id
   LEFT JOIN cys_classification.esm2_predictions esm
          ON esm.domain_id = cc.domain_id
         AND esm.cys_position = cc.cys_position
-  WHERE cr.parameter_set_id = 2
-    AND dc.is_representative = TRUE
   ORDER BY d.domain_id, cc.cys_position
 ) TO STDOUT WITH (FORMAT csv, DELIMITER E'\t', HEADER true);
 \o
@@ -62,13 +60,11 @@ COPY (
     fa.h_group_id,
     fa.x_group_id
   FROM cys_classification.domain_summary ds
+  JOIN cys_classification.esm2_run_domains rd
+       ON rd.domain_id = ds.domain_id AND rd.run_id = 1  -- paper-v1
   JOIN ecod_commons.domains d              ON ds.domain_id = d.id
   JOIN ecod_commons.proteins p             ON d.protein_id = p.id
   JOIN ecod_commons.f_group_assignments fa ON ds.domain_id = fa.domain_id
-  JOIN ecod_commons.domain_clusters dc     ON d.id = dc.domain_id
-  JOIN ecod_commons.clustering_runs cr     ON dc.clustering_run_id = cr.id
-  WHERE cr.parameter_set_id = 2
-    AND dc.is_representative = TRUE
   ORDER BY d.domain_id
 ) TO STDOUT WITH (FORMAT csv, DELIMITER E'\t', HEADER true);
 \o

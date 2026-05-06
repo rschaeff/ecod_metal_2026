@@ -91,14 +91,18 @@ export interface SiteTypeRow {
   nLinks: number;
 }
 
-// ---- F70 rep CTE fragment (reused) ----
+// ---- paper-v1 inference scope CTE (reused) ----
+//
+// Filters to the published manuscript scope (cys_classification.esm2_runs
+// run_label='paper-v1', id=1) rather than the live F70 set, which has
+// already drifted by ~3,275 domains. See DB_CONTRACT.md §2.12.
+const PAPER_V1_RUN_ID = 1;
 
 const F70_REP_CTE = `f70 AS (
     SELECT fa.domain_id, fa.x_group_id, fa.t_group_id, fa.f_group_id
     FROM ecod_commons.f_group_assignments fa
-    JOIN ecod_commons.domain_clusters dc ON fa.domain_id = dc.domain_id
-    JOIN ecod_commons.clustering_runs cr ON dc.clustering_run_id = cr.id
-    WHERE cr.parameter_set_id = 2 AND dc.is_representative = TRUE
+    JOIN cys_classification.esm2_run_domains rd
+      ON rd.domain_id = fa.domain_id AND rd.run_id = ${PAPER_V1_RUN_ID}
   )`;
 
 const PDB_F70_CTE = `pdb_f70 AS (

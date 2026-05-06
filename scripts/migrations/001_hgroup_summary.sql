@@ -1,7 +1,10 @@
 -- Migration 001: cys_classification.hgroup_summary materialized view
 -- Source: DB_CONTRACT.md §4.1.
 -- Replaces the live scan in src/lib/queries.ts getHGroupSummary() with a
--- precomputed per-H-group rollup of the F70-rep confusion-matrix inputs.
+-- precomputed per-H-group rollup of the confusion-matrix inputs over the
+-- paper-v1 inference scope (DB_CONTRACT §2.12). Joining via
+-- esm2_run_domains instead of the live F70 filter keeps the MV pinned to
+-- the published manuscript dataset even as ECOD's F70 set drifts.
 --
 -- Refresh after every data load:
 --   REFRESH MATERIALIZED VIEW CONCURRENTLY cys_classification.hgroup_summary;
@@ -30,14 +33,12 @@ SELECT
   COALESCE(sum(ds.n_disulfide)     FILTER (WHERE p.source_type <> 'pdb'), 0) AS afdb_n_disulfide,
   COALESCE(sum(ds.n_metal_binding) FILTER (WHERE p.source_type <> 'pdb'), 0) AS afdb_n_metal
 FROM cys_classification.domain_summary       ds
+JOIN cys_classification.esm2_run_domains     rd  ON rd.domain_id = ds.domain_id AND rd.run_id = 1
 JOIN ecod_commons.domains                    d   ON ds.domain_id = d.id
 JOIN ecod_commons.proteins                   p   ON d.protein_id = p.id
 JOIN ecod_commons.f_group_assignments        fa  ON ds.domain_id = fa.domain_id
-JOIN ecod_commons.domain_clusters            dc  ON d.id = dc.domain_id
-JOIN ecod_commons.clustering_runs            cr  ON dc.clustering_run_id = cr.id
 LEFT JOIN ecod_rep.cluster                   hc  ON fa.h_group_id = hc.id::text AND hc.type = 'H'
 LEFT JOIN ecod_rep.cluster                   xc  ON fa.x_group_id = xc.id::text AND xc.type = 'X'
-WHERE cr.parameter_set_id = 2 AND dc.is_representative = TRUE
 GROUP BY fa.h_group_id, hc.name, fa.x_group_id, xc.name
 HAVING count(DISTINCT d.id) >= 1;
 
