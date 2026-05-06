@@ -17,8 +17,18 @@ const SOURCE_LABELS: Record<string, string> = {
   uniparc: 'UniParc',
 };
 
+// EPP-source domains are in the paper-v1 scope (~22K) but ESM2 was never
+// run on them — every cysteine sits as UNCLASSIFIED. They render as
+// pure free-thiol bars that misrepresent the model's behaviour, so we
+// hide them from Fig S2. Provenance lives in the underlying query
+// (queries.ts getSourceTypeBreakdown); this is a panel-level decision,
+// not a data fix.
+const HIDDEN_SOURCES = new Set(['epp']);
+
 export default function FigS2Panel({ sources }: FigS2PanelProps) {
-  const data = sources.map((s) => {
+  const visible = sources.filter((s) => !HIDDEN_SOURCES.has(s.sourceType));
+
+  const data = visible.map((s) => {
     const total = s.nDisulfide + s.nMetal + s.nUnclassified;
     return {
       source: SOURCE_LABELS[s.sourceType] ?? s.sourceType.toUpperCase(),
@@ -31,7 +41,7 @@ export default function FigS2Panel({ sources }: FigS2PanelProps) {
 
   const csvRows: (string | number)[][] = [
     ['source_type', 'n_domains', 'n_disulfide', 'n_metal_binding', 'n_free_thiol'],
-    ...sources.map((s) => [s.sourceType, s.nDomains, s.nDisulfide, s.nMetal, s.nUnclassified]),
+    ...visible.map((s) => [s.sourceType, s.nDomains, s.nDisulfide, s.nMetal, s.nUnclassified]),
   ];
 
   return (
