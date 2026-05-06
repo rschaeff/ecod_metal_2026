@@ -219,7 +219,11 @@ SELECT 'table:cys_classification.uniprot_subcellular',
        ) THEN 'PASS' ELSE 'MISSING' END,
        'load from data/uniprot_subcellular_location.tsv per DB_CONTRACT §4.2';
 
--- ---------- §5.1 evidence_class column (open semantic question) ----------
+-- ---------- §3.3 evidence_class column ----------
+-- evidence_class carries the structural-evidence-only call
+-- (STRUCT_DIS / STRUCT_MET / STRUCT_NEG / NULL). Independent of
+-- cysteine_classifications.classification, which is the ESM2
+-- threshold call. See DB_CONTRACT §3.3.
 INSERT INTO verify_results
 SELECT 'column:cys_classification.cysteine_classifications.evidence_class',
        CASE WHEN EXISTS (
@@ -228,7 +232,43 @@ SELECT 'column:cys_classification.cysteine_classifications.evidence_class',
            AND table_name = 'cysteine_classifications'
            AND column_name = 'evidence_class'
        ) THEN 'PASS' ELSE 'MISSING' END,
-       'recommended fix for the H-group provenance question (DB_CONTRACT §5.1)';
+       'structural-evidence-only call axis for the H-group browser';
+
+-- evidence_class vocabulary sanity (null + 3 known values, nothing else).
+INSERT INTO verify_results
+SELECT 'data:evidence_class-vocabulary',
+       CASE WHEN bad = 0 THEN 'PASS' ELSE 'FAIL' END,
+       bad || ' row(s) with an evidence_class outside {NULL, STRUCT_DIS, STRUCT_MET, STRUCT_NEG}'
+FROM (
+  SELECT count(*) AS bad
+    FROM cys_classification.cysteine_classifications
+   WHERE evidence_class IS NOT NULL
+     AND evidence_class NOT IN ('STRUCT_DIS','STRUCT_MET','STRUCT_NEG')
+) q;
+
+-- evidence_class population invariant: PDB-source rows must have a
+-- non-null evidence_class; non-PDB-source rows must have null.
+INSERT INTO verify_results
+SELECT 'data:evidence_class-population-invariant',
+       CASE WHEN bad = 0 THEN 'PASS' ELSE 'FAIL' END,
+       bad || ' row(s) violate "evidence_class non-null iff source_type=pdb"'
+FROM (
+  SELECT count(*) AS bad
+    FROM cys_classification.cysteine_classifications cc
+    JOIN ecod_commons.domains  d ON cc.domain_id = d.id
+    JOIN ecod_commons.proteins p ON d.protein_id = p.id
+   WHERE (p.source_type =  'pdb' AND cc.evidence_class IS NULL)
+      OR (p.source_type <> 'pdb' AND cc.evidence_class IS NOT NULL)
+) q;
+
+-- Sibling MV existence.
+INSERT INTO verify_results
+SELECT 'view:cys_classification.hgroup_summary_struct',
+       CASE WHEN EXISTS (
+         SELECT 1 FROM pg_matviews
+         WHERE schemaname = 'cys_classification' AND matviewname = 'hgroup_summary_struct'
+       ) THEN 'PASS' ELSE 'MISSING' END,
+       'sibling of hgroup_summary using evidence_class on the PDB axis';
 
 -- ---------- Emit rows for the wrapper ----------
 SELECT label || '|' || status || '|' || COALESCE(detail, '')

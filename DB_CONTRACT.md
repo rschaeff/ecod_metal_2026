@@ -232,6 +232,57 @@ disagreed with the published classifications; it was producing
 sub-threshold `met_prob` values under `METAL_BINDING` badges on the
 domain page before the page switched to evidence-string parsing.
 
+### 3.3 Structural-evidence axis — `cysteine_classifications.evidence_class`
+
+`classification` is the ESM2-3state thresholded call regardless of
+whether structural ground truth exists for the cysteine. We
+verified empirically (commit history of migration 006) that 376
+PDB-source cysteines with both PDB SSBOND records and geometric
+disulfide bonds are still `UNCLASSIFIED` in `classification` because
+ESM2 fell short of threshold. The H-group browser caption
+("structurally-known × ESM2-predicted") therefore can't be
+reproduced from `classification` alone.
+
+`evidence_class` carries the structural-evidence-only call:
+
+| Value | Meaning |
+| --- | --- |
+| `STRUCT_DIS` | cysteine appears in `pdb_ssbonds` (`both_in_domain=TRUE`) or `geometric_disulfides` |
+| `STRUCT_MET` | cysteine appears in `pdb_metal_links` with `coord_resname='CYS'` |
+| `STRUCT_NEG` | PDB-source domain, none of the above (structure was examined and shows free thiol) |
+| `NULL` | non-PDB-source — no structural ground truth available |
+
+When both `STRUCT_DIS` and `STRUCT_MET` signals are present at a
+single cysteine, `STRUCT_DIS` wins (covalent disulfide is the
+unambiguous post-translational state).
+
+Backfilled on dione by `scripts/migrations/006_evidence_class.sql`
+(2,706,778 rows; 9,041 `STRUCT_DIS`, 2,407 `STRUCT_MET`, 146,032
+`STRUCT_NEG`, 2,549,298 `NULL`). Invariant: `evidence_class IS NOT NULL`
+iff `proteins.source_type = 'pdb'` — `geometric_disulfides` is also
+populated for AFDB-source domains (Sγ-Sγ on the AlphaFold model), but
+those rows are predicted-structure agreement, not experimental ground
+truth, and don't flow into `evidence_class`.
+
+Sibling MV `cys_classification.hgroup_summary_struct` mirrors
+`hgroup_summary` but uses `evidence_class` on the PDB axis. **Not
+yet wired to the H-group browser page** — keeping it parked behind a
+sibling so a side-by-side diff against `hgroup_summary` can be
+audited before the page numbers shift. Headline-cell counts
+(`<5%` known × `≥95%` predicted, the "candidate-novel" quadrant) on
+the v2 / paper-v1 scope:
+
+| Task | Old (`hgroup_summary`) | New (`hgroup_summary_struct`) |
+| --- | --- | --- |
+| Disulfide | 10 H-groups | 57 H-groups |
+| Metal | 1 H-group | 2 H-groups |
+
+The manuscript headline ("12 disulfide / 3 metal candidate-novel
+cells") corresponds to neither view exactly; the 12/3 likely came
+from a different denominator definition again. Reconciliation is a
+manuscript-side task — the new MV is the code-side scaffold for
+flipping the page over once the manuscript framing is settled.
+
 ---
 
 ## 4. Tables that **don't exist yet** and must be created
@@ -312,30 +363,15 @@ provenance question has an answer, the view definition is straightforward.
 
 ## 5. Open semantic questions
 
-### 5.1 `cysteine_classifications.classification` provenance on PDB-source rows
+### 5.1 ~~`classification` provenance on PDB-source rows~~ — RESOLVED
 
-**The question.** For a row with a PDB-source `domain_id`, does
-`classification` reflect (a) the structural ground truth alone (geometric
-SS / SSBOND / metal LINK), (b) the ESM2-3state prediction alone, or (c) a
-merge of the two?
-
-**Why it matters.** The H-group browser confusion matrix
-(`/h-group`, paper Fig 5A,B) treats PDB-source rows as the
-"structurally-known" axis and AFDB-source rows as the "ESM2-predicted" axis.
-If PDB-source `classification` is option (b) or (c), the matrix conflates
-ground truth with prediction and the manuscript headline (12 disulfide / 3
-metal candidate-novel cells) won't reproduce verbatim.
-
-**Recommended resolution.** Add an `evidence_class` column to
-`cysteine_classifications` carrying the structural-evidence-only call
-(`'STRUCT_DIS'`, `'STRUCT_MET'`, `'STRUCT_NEG'`, or `null` when no
-structural evidence exists for that cysteine). Keep `classification` as
-the published call. Frontend then uses `evidence_class` for the
-"structurally-known" axis on PDB-source rows.
-
-If the resolution is option (a) — `classification` already reflects
-ground-truth-only on PDB-source — confirm and document here so the
-frontend's existing assumption is explicit.
+**Answer: option (b).** `classification` is the ESM2-3state thresholded
+call regardless of source — confirmed empirically by 376 PDB-source
+cysteines that have both PDB SSBOND records and geometric disulfide
+bonds but are still `UNCLASSIFIED` because `P(Dis) < 0.742`. See §3.3
+for the structural-evidence-only `evidence_class` column added to
+carry the ground-truth axis, and the side-by-side diff between
+`hgroup_summary` and `hgroup_summary_struct`.
 
 ### 5.2 `evidence` tag vocabulary
 
@@ -381,3 +417,4 @@ it works as a deployment gate.
 | 2026-05-06 | Migration `scripts/migrations/003_esm2_runs.sql` adds `esm2_runs` + `esm2_run_domains` (§2.12). Bootstrap `paper-v1` row and 691,078 domain memberships; 3,275 of those have already drifted out of the live F70 rep set. |
 | 2026-05-06 | Migration `scripts/migrations/004_rename_esm2_predictions.sql` renames `cys_classification.esm2_predictions` → `esm2_predictions_held_out_v1`. Authoritative per-cys probabilities live inline in `cysteine_classifications.evidence` (§3.1); the held-out v1 table disagreed with the published classifications and was producing sub-threshold probabilities under METAL_BINDING / DISULFIDE badges on the domain page. |
 | 2026-05-06 | Migration `scripts/migrations/005_drop_esm2_predictions_held_out_v1.sql` drops the held-out v1 table after `getMethodStats` and the four `analysisQueries.ts` argmax queries switched to the published `cysteine_classifications.classification` source (commit `ccf08d4`). 2,644,610 rows dropped. §3 collapsed to the single `evidence`-string source. |
+| 2026-05-06 | Migration `scripts/migrations/006_evidence_class.sql` adds `evidence_class` (§3.3) and the sibling `hgroup_summary_struct` MV. Resolves §5.1 (option b — `classification` is the ESM2 threshold call regardless of source). New MV not yet wired to the H-group browser; old vs new candidate-novel headline diff is 10→57 H-groups for disulfide and 1→2 for metal. |
