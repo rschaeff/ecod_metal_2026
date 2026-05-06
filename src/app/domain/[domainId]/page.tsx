@@ -91,6 +91,7 @@ export default async function DomainPage({ params }: DomainPageProps) {
               sequence={domainInfo.sequence}
               classifications={classifications}
               evidence={evidence}
+              rangeDefinition={domainInfo.rangeDefinition}
             />
           </div>
         </div>

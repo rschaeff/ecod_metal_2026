@@ -1,11 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { CysteineRecord } from '@/types/cysteine';
+import {
+  parseRangeDefinition,
+  mapPositionToStructure,
+  type StructureCys,
+} from '@/lib/structurePositions';
 
 interface SequenceViewerProps {
   sequence: string;
   classifications: CysteineRecord[];
+  // Optional ECOD range_definition (e.g., "A:5-150"). When supplied, the
+  // tooltip surfaces the source-structure (chain, resnum) coordinate so the
+  // reader can cross-reference RCSB or AFDB outside the page.
+  rangeDefinition?: string | null;
 }
 
 const COLORS: Record<string, { bg: string; text: string }> = {
@@ -20,7 +29,7 @@ const CLASS_LABELS: Record<string, string> = {
   UNCLASSIFIED: 'Free thiol',
 };
 
-export default function SequenceViewer({ sequence, classifications }: SequenceViewerProps) {
+export default function SequenceViewer({ sequence, classifications, rangeDefinition }: SequenceViewerProps) {
   const [tooltip, setTooltip] = useState<{ x: number; y: number; record: CysteineRecord } | null>(null);
 
   // Build a position-to-classification map
@@ -28,6 +37,19 @@ export default function SequenceViewer({ sequence, classifications }: SequenceVi
   for (const c of classifications) {
     classMap.set(c.cysPosition, c);
   }
+
+  // Pre-resolve every classified cysteine's structure coordinate so the
+  // tooltip lookup is O(1).
+  const structureMap = useMemo<Map<number, StructureCys>>(() => {
+    const segments = parseRangeDefinition(rangeDefinition);
+    const m = new Map<number, StructureCys>();
+    if (segments.length === 0) return m;
+    for (const c of classifications) {
+      const mapped = mapPositionToStructure(c.cysPosition, segments);
+      if (mapped) m.set(c.cysPosition, mapped);
+    }
+    return m;
+  }, [classifications, rangeDefinition]);
 
   const CHARS_PER_LINE = 60;
   const lines: React.ReactNode[][] = [];
@@ -128,6 +150,14 @@ export default function SequenceViewer({ sequence, classifications }: SequenceVi
         >
           <p className="font-medium text-gray-900 dark:text-gray-100">
             Cys {tooltip.record.cysPosition}
+            {(() => {
+              const struct = structureMap.get(tooltip.record.cysPosition);
+              return struct ? (
+                <span className="ml-2 text-xs font-mono text-gray-500 dark:text-gray-400">
+                  · {struct.chain}:{struct.resnum}
+                </span>
+              ) : null;
+            })()}
           </p>
           <p className="text-gray-600 dark:text-gray-400">
             Classification: <span className="font-medium">{CLASS_LABELS[tooltip.record.classification] ?? tooltip.record.classification}</span>

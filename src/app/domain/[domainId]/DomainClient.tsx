@@ -10,6 +10,7 @@ interface DomainClientProps {
   sequence: string;
   classifications: CysteineRecord[];
   evidence: DomainEvidence;
+  rangeDefinition?: string | null;
 }
 
 function ProbBar({ neg, dis, met }: { neg: number; dis: number; met: number }) {
@@ -28,7 +29,7 @@ function ProbBar({ neg, dis, met }: { neg: number; dis: number; met: number }) {
   );
 }
 
-export default function DomainClient({ sequence, classifications, evidence }: DomainClientProps) {
+export default function DomainClient({ sequence, classifications, evidence, rangeDefinition }: DomainClientProps) {
   const classMap = new Map<number, CysteineRecord>();
   for (const c of classifications) classMap.set(c.cysPosition, c);
 
@@ -60,7 +61,11 @@ export default function DomainClient({ sequence, classifications, evidence }: Do
 
   return (
     <div className="space-y-6">
-      <SequenceViewer sequence={sequence} classifications={classifications} />
+      <SequenceViewer
+        sequence={sequence}
+        classifications={classifications}
+        rangeDefinition={rangeDefinition}
+      />
 
       {/* Evidence Panels */}
       <div className="space-y-3">
