@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { basePath } from '@/lib/config';
+import { parseRangeDefinition, mapPositionToStructure } from '@/lib/structurePositions';
 
 interface DomainInfo {
   range: string;
@@ -179,6 +180,31 @@ export default function StructureViewer({
       }
     };
   }, [viewerUrl]);  // Re-run when URL changes
+
+  // Cross-component focus: SequenceViewer (or anywhere on the page) can
+  // dispatch a `tricyp:focus-cys` window event with the 1-indexed domain
+  // cysteine position; this viewer maps it to author chain + residue
+  // number via the range prop and asks the iframe to focus it.
+  useEffect(() => {
+    const segments = parseRangeDefinition(range ?? null);
+    if (segments.length === 0) return;
+
+    const onFocusCys = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ cysPosition: number }>).detail;
+      if (!detail || typeof detail.cysPosition !== 'number') return;
+      const mapped = mapPositionToStructure(detail.cysPosition, segments);
+      if (!mapped) return;
+      iframeRef.current?.contentWindow?.postMessage(
+        { target: 'ecod-viewer', action: 'focusCys', chain: mapped.chain, resnum: mapped.resnum },
+        '*',
+      );
+    };
+
+    window.addEventListener('tricyp:focus-cys', onFocusCys as EventListener);
+    return () => {
+      window.removeEventListener('tricyp:focus-cys', onFocusCys as EventListener);
+    };
+  }, [range]);
 
   // Send commands to the viewer
   const sendCommand = (action: string) => {

@@ -996,14 +996,41 @@
     // Listen for messages from parent iframe
     window.addEventListener('message', (event) => {
       if (!event.data || event.data.target !== 'ecod-viewer') return;
-      const { action, value } = event.data;
+      const { action, value, chain, resnum } = event.data;
       switch (action) {
         case 'reset': resetView(); break;
         case 'spin': toggleSpin(); break;
         case 'viewMode': setViewMode(value); break;
         case 'destroy': destroyViewer(); break;
+        case 'focusCys': focusCysteine(chain, resnum); break;
       }
     });
+
+    // Cross-component cysteine focus: triggered by clicking a cysteine in
+    // the page-side SequenceViewer. Highlights the residue with an amber
+    // pulse and zooms the camera onto it. Falls back silently if the
+    // viewer hasn't finished initialising yet.
+    function focusCysteine(chain, resnum) {
+      if (!viewerInstance) return;
+      if (!chain || typeof resnum !== 'number') return;
+      const target = {
+        auth_asym_id: chain,
+        auth_residue_number: resnum,
+      };
+      try {
+        // Transient overlay; doesn't disturb the long-lived classification colors.
+        viewerInstance.visual.highlight({
+          data: [{ ...target, color: { r: 251, g: 191, b: 36 } /* amber-400 */ }],
+        });
+      } catch (e) {
+        console.warn('focusCys highlight failed:', e);
+      }
+      try {
+        viewerInstance.visual.focus([target]);
+      } catch (e) {
+        console.warn('focusCys focus failed:', e);
+      }
+    }
 
     // Wait for PDBeMolstarPlugin to be available (CDN script may load slowly)
     function waitForPlugin(callback, maxWait) {

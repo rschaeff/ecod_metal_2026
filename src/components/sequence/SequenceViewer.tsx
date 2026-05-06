@@ -43,15 +43,32 @@ export default function SequenceViewer({ sequence, classifications }: SequenceVi
 
       if (char === 'C' && record) {
         const colors = COLORS[record.classification];
+        const cysPos = record.cysPosition;
         lineChars.push(
           <span
             key={j}
-            className={`${colors.bg} ${colors.text} font-bold cursor-pointer rounded-sm px-px`}
+            role="button"
+            tabIndex={0}
+            title="Click to focus this cysteine in the 3D viewer"
+            className={`${colors.bg} ${colors.text} font-bold cursor-pointer rounded-sm px-px hover:ring-2 hover:ring-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
             onMouseEnter={(e) => {
               const rect = (e.target as HTMLElement).getBoundingClientRect();
               setTooltip({ x: rect.left, y: rect.bottom + 4, record });
             }}
             onMouseLeave={() => setTooltip(null)}
+            onClick={() => {
+              window.dispatchEvent(
+                new CustomEvent('tricyp:focus-cys', { detail: { cysPosition: cysPos } }),
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                window.dispatchEvent(
+                  new CustomEvent('tricyp:focus-cys', { detail: { cysPosition: cysPos } }),
+                );
+              }
+            }}
           >
             {char}
           </span>
@@ -85,7 +102,7 @@ export default function SequenceViewer({ sequence, classifications }: SequenceVi
       </pre>
 
       {/* Legend */}
-      <div className="flex gap-4 mt-2 text-xs text-gray-600 dark:text-gray-400">
+      <div className="flex flex-wrap gap-4 mt-2 text-xs text-gray-600 dark:text-gray-400">
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded-sm bg-red-200 dark:bg-red-800 inline-block" />
           Disulfide
@@ -97,6 +114,9 @@ export default function SequenceViewer({ sequence, classifications }: SequenceVi
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded-sm bg-gray-200 dark:bg-gray-600 inline-block" />
           Free thiol
+        </span>
+        <span className="ml-auto italic text-gray-400 dark:text-gray-500">
+          Click any cysteine to focus it in the 3D viewer
         </span>
       </div>
 
