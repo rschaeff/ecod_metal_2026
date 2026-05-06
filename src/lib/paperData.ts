@@ -346,19 +346,29 @@ export interface BenchmarkRow {
   ap: number | null;     // average precision
 }
 
+// Numbers transcribed from the 2026-03-23 held-out benchmark on the b2
+// dataset (166,626 cysteines / 48,287 proteins after removing 6,787 with
+// empty AFDB structures). All-metals and disulfide rows are the
+// manuscript "all" stratum; iron-only rows come from the metal-type
+// stratification analysis (Fig S1). Per-metal Zn / Ca / Mg / Mn rows
+// are kept as placeholders until the manuscript figure-data CSVs are
+// loaded.
 export const BENCHMARK_TABLE: BenchmarkRow[] = [
-  // Disulfide task
-  { tool: 'ESM2-3state',     task: 'disulfide',     stratum: 'all',       auroc: null, ap: null },
-  { tool: 'SSBONDPredict',   task: 'disulfide',     stratum: 'all',       auroc: null, ap: null },
-  // Metal-binding task — all metals
-  { tool: 'ESM2-3state',     task: 'metal_binding', stratum: 'all',       auroc: null, ap: null },
-  { tool: 'LMetalSite',      task: 'metal_binding', stratum: 'all',       auroc: null, ap: null },
-  { tool: 'GPSite',          task: 'metal_binding', stratum: 'all',       auroc: null, ap: null },
-  // Metal-binding — iron-only (filled from spec)
+  // Disulfide task — all (no metal-type stratification on disulfides)
+  { tool: 'ESM2-3state',     task: 'disulfide',     stratum: 'all',       auroc: 0.987, ap: 0.969 },
+  { tool: 'SSBONDPredict',   task: 'disulfide',     stratum: 'all',       auroc: 0.975, ap: 0.938 },
+  // Metal-binding — all metals (iron-dominated; read alongside the
+  // fair-metals stratification below).
+  { tool: 'ESM2-3state',     task: 'metal_binding', stratum: 'all',       auroc: 0.979, ap: 0.621 },
+  { tool: 'LMetalSite',      task: 'metal_binding', stratum: 'all',       auroc: 0.894, ap: 0.138 },
+  { tool: 'GPSite',          task: 'metal_binding', stratum: 'all',       auroc: 0.841, ap: 0.069 },
+  // Metal-binding — iron-stratum (~83% of held-out positives).
   { tool: 'ESM2-3state',     task: 'metal_binding', stratum: 'iron_only', auroc: 0.993, ap: null },
   { tool: 'LMetalSite',      task: 'metal_binding', stratum: 'iron_only', auroc: 0.917, ap: null },
   { tool: 'GPSite',          task: 'metal_binding', stratum: 'iron_only', auroc: 0.877, ap: null },
-  // Metal-binding — Zn / Ca / Mg / Mn placeholders
+  // Metal-binding — Zn / Ca / Mg / Mn placeholders. Per RC1 these
+  // make the headline fair-comparison number; transcribe from the
+  // manuscript figure-data CSVs and replace nulls.
   { tool: 'ESM2-3state',     task: 'metal_binding', stratum: 'zn',        auroc: null, ap: null },
   { tool: 'LMetalSite',      task: 'metal_binding', stratum: 'zn',        auroc: null, ap: null },
   { tool: 'GPSite',          task: 'metal_binding', stratum: 'zn',        auroc: null, ap: null },

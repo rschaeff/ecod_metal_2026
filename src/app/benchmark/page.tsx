@@ -53,6 +53,21 @@ const benchmarkCsvRows: (string | number)[][] = [
   ]),
 ];
 
+// Headline section: pulls the all-stratum rows for both tasks straight
+// out of BENCHMARK_TABLE so there is one source of truth. ESM2-3state
+// renders first per task, baselines after, in the order they appear in
+// the table.
+const HEADLINE_TASK_LABEL: Record<BenchmarkRow['task'], string> = {
+  disulfide: 'Disulfide',
+  metal_binding: 'Metal-binding (all metals)',
+};
+
+const headlineRows = BENCHMARK_TABLE.filter((r) => r.stratum === 'all');
+const headlineByTask: { task: BenchmarkRow['task']; rows: BenchmarkRow[] }[] = [
+  { task: 'disulfide',     rows: headlineRows.filter((r) => r.task === 'disulfide') },
+  { task: 'metal_binding', rows: headlineRows.filter((r) => r.task === 'metal_binding') },
+];
+
 export default function BenchmarkPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -73,6 +88,65 @@ export default function BenchmarkPage() {
           disulfide ≥ {BENCHMARK_THRESHOLDS.disulfide}).
         </p>
       </header>
+
+      {/* Headline: held-out AUROC + AP for both tasks, all-stratum.
+          The all-metals metal-binding number is iron-dominated by ~83%;
+          the fair-metals (Zn / Ca / Mg / Mn) AUROCs are not yet
+          transcribed, so the panel cites the manuscript narrowing
+          claim in prose rather than displaying numbers we cannot back. */}
+      <section className="mb-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          Held-out evaluation · b2 dataset
+        </p>
+        <h2 className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-100">
+          AUROC and average precision
+        </h2>
+        <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {headlineByTask.map(({ task, rows }) => (
+            <div key={task} className="rounded-md border border-gray-200 dark:border-gray-700 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                {HEADLINE_TASK_LABEL[task]}
+              </p>
+              <table className="mt-3 w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-gray-500 dark:text-gray-400 uppercase">
+                    <th className="font-medium pb-1">Tool</th>
+                    <th className="font-medium pb-1 text-right">AUROC</th>
+                    <th className="font-medium pb-1 text-right">AP</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {rows.map((r) => (
+                    <tr key={r.tool}>
+                      <td className="py-1.5 font-medium text-gray-900 dark:text-gray-100">{r.tool}</td>
+                      <td className="py-1.5 text-right font-mono text-gray-900 dark:text-gray-100">
+                        {fmtMetric(r.auroc)}
+                      </td>
+                      <td className="py-1.5 text-right font-mono text-gray-900 dark:text-gray-100">
+                        {fmtMetric(r.ap)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed max-w-3xl">
+          The metal-binding all-metals number is iron-dominated — roughly
+          83% of held-out positives are Fe-coordinated, and LMetalSite /
+          GPSite were not trained on Fe / Fe-S / heme cysteine sites. On
+          the metals where all three tools share training coverage
+          (Zn / Ca / Mg / Mn), the AUROC gap narrows from ~8.5 to ~3.7
+          points, and the published narrative is "broader scope plus
+          structural independence", not algorithmic dominance.
+          Average precision (AP) on the imbalanced metal-binding task
+          shows the gap more honestly than AUROC: ESM2-3state {' '}
+          <span className="font-mono">0.621</span> vs LMetalSite{' '}
+          <span className="font-mono">0.138</span> reflects training-
+          objective alignment as much as architecture.
+        </p>
+      </section>
 
       {/* Fig 2 panels */}
       <section className="mb-10">
