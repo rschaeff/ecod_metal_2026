@@ -7,9 +7,11 @@
 --
 -- Header table also captures the per-run model card and operating
 -- thresholds so the published call set can be reproduced from the
--- per-cysteine probabilities in cys_classification.esm2_predictions_held_out_v1
--- (per-cys probs that match the published classifications live inline in
--- cysteine_classifications.evidence; see migration 004 for the rename).
+-- per-cysteine probabilities. Per-cys probs that match the published
+-- classifications live inline in cysteine_classifications.evidence as
+-- 'esm2_neg:X;esm2_dis:Y;esm2_met:Z'; see migrations 004 (rename of
+-- esm2_predictions → esm2_predictions_held_out_v1) and 005 (drop) for
+-- the older inconsistent inference table that's no longer present.
 --
 -- Bootstrap policy: the paper-v1 run is populated from the union of
 -- domains that produced any classification artifact (domain_summary ∪

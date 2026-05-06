@@ -78,9 +78,10 @@ export async function getMethodStats(): Promise<MethodStat[]> {
   // "ESM2 3-state" counts the published prediction surface — every cysteine
   // in cysteine_classifications whose evidence string starts with 'esm2_'
   // (so 'no_esm2' rows, which are structural-evidence-only calls, drop
-  // out). Counting from cys_classification.esm2_predictions_held_out_v1
-  // would mislabel: that's an older / different inference whose
-  // probabilities disagree with the published classifications.
+  // out). The older esm2_predictions_held_out_v1 table was dropped in
+  // migration 005 because its probabilities disagreed with the
+  // published classifications and using them as a label source
+  // produced confusing displays.
   const rows = await query<{ method: string; records: string; domains: string }>(`
     SELECT 'ESM2 3-state' as method,
            count(*)::text as records,
@@ -1040,12 +1041,12 @@ export async function getDomainClassifications(domainDbId: number): Promise<Cyst
 export async function getDomainEvidence(domainDbId: number): Promise<DomainEvidence> {
   // Per-class probabilities are taken from cysteine_classifications.evidence,
   // which carries them as a single string ('esm2_neg:X;esm2_dis:Y;esm2_met:Z'
-  // or 'no_esm2'). cys_classification.esm2_predictions_held_out_v1 is a
-  // different / earlier inference run whose probabilities don't match
-  // the published classifications — using it produces sub-threshold
-  // probabilities under METAL_BINDING / DISULFIDE badges, which the
-  // domain page used to render. Parsing the evidence string keeps the
-  // displayed probabilities self-consistent with the classification.
+  // or 'no_esm2'). A separate esm2_predictions_held_out_v1 table used
+  // to hold an earlier inference whose probabilities disagreed with
+  // the published classifications; that table was dropped in
+  // migration 005 once the domain page switched to evidence-string
+  // parsing. The bug it caused: sub-threshold probs rendered under
+  // METAL_BINDING / DISULFIDE badges.
   const evidenceRows = await query<{
     cys_position: number;
     evidence: string | null;

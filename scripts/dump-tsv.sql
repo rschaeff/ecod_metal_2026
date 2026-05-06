@@ -21,8 +21,8 @@
 -- cysteine_classifications.evidence, which carries them as a single
 -- 'esm2_neg:X;esm2_dis:Y;esm2_met:Z' string and is the only source
 -- consistent with the published classification call. The separate
--- cys_classification.esm2_predictions_held_out_v1 table is an earlier / different
--- inference run whose probabilities disagree with the classifications.
+-- esm2_predictions_held_out_v1 table (dropped in migration 005) was an
+-- earlier inference whose probabilities disagreed with the classifications.
 -- Rows where evidence='no_esm2' (structural-evidence-only calls) emit
 -- empty probability cells.
 \o :cys_out

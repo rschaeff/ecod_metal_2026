@@ -208,41 +208,29 @@ Backfill from the inference input manifest when it is recovered.
 
 ---
 
-## 3. Tables that are **conditionally** required
+## 3. Per-cysteine ESM2 probabilities
 
-### 3.1 Per-cysteine probabilities — `cysteine_classifications.evidence`
+### 3.1 Authoritative source — `cysteine_classifications.evidence`
 
-The authoritative per-cysteine ESM2 probabilities for the **published**
-classifications are stored inline on `cys_classification.cysteine_classifications.evidence`
-as a single string of the form `'esm2_neg:X;esm2_dis:Y;esm2_met:Z'` (or
-`'no_esm2'` for structural-evidence-only calls). They always match the
-`classification` column by construction.
+The per-cysteine ESM2 3-state probabilities for the **published**
+classifications are stored inline on
+`cys_classification.cysteine_classifications.evidence` as a single
+string of the form `'esm2_neg:X;esm2_dis:Y;esm2_met:Z'` (or
+`'no_esm2'` for structural-evidence-only calls). They always match
+the `classification` column by construction.
 
-The domain page (`getDomainEvidence` in `src/lib/queries.ts`) parses the
-evidence string for each cysteine; the bulk per-cysteine TSV
+The domain page (`getDomainEvidence` in `src/lib/queries.ts`) parses
+the evidence string for each cysteine; the bulk per-cysteine TSV
 (`scripts/dump-tsv.sql`) extracts the three probabilities via
 `regexp_match` over the same column.
 
-### 3.2 `cys_classification.esm2_predictions_held_out_v1`
-
-Held-out v1 inference run. **Disagrees with the published classifications**
-— for many cysteines `met_prob`/`dis_prob` falls below the published
-operating thresholds (0.972 / 0.742) even though the classification
-fires on `evidence`. Renamed from `esm2_predictions` in migration 004
-(`scripts/migrations/004_rename_esm2_predictions.sql`) to make the
-distinction unambiguous. Retained for argmax-based coverage analysis
-(`src/lib/analysisQueries.ts`) but **not** cited from any domain detail
-or download surface.
-
-| Column | Type |
-| --- | --- |
-| `domain_id` | `bigint` |
-| `cys_position` | `int` |
-| `neg_prob` | `real` |
-| `dis_prob` | `real` |
-| `met_prob` | `real` |
-
-The three probabilities should sum to 1.0 ± floating-point tolerance.
+There is no separate per-class probability table. An older
+`cys_classification.esm2_predictions` table (renamed to
+`esm2_predictions_held_out_v1` in migration 004 and dropped in
+migration 005) held probabilities from an earlier inference run that
+disagreed with the published classifications; it was producing
+sub-threshold `met_prob` values under `METAL_BINDING` badges on the
+domain page before the page switched to evidence-string parsing.
 
 ---
 
@@ -391,4 +379,5 @@ it works as a deployment gate.
 | 2026-05-05 | Initial contract drafted from `src/lib/queries.ts` HEAD `436d5b2`. |
 | 2026-05-05 | Migrations `scripts/migrations/001_hgroup_summary.sql` and `002_uniprot_subcellular.sql` create §4.1 MV (3352 H-groups, 5 ms cached read) and §4.2 empty table. `getHGroupSummary()` is ready to swap to `SELECT * FROM cys_classification.hgroup_summary` — frontend swap is the next step. `uniprot_subcellular` ETL still pending. |
 | 2026-05-06 | Migration `scripts/migrations/003_esm2_runs.sql` adds `esm2_runs` + `esm2_run_domains` (§2.12). Bootstrap `paper-v1` row and 691,078 domain memberships; 3,275 of those have already drifted out of the live F70 rep set. |
-| 2026-05-06 | Migration `scripts/migrations/004_rename_esm2_predictions.sql` renames `cys_classification.esm2_predictions` → `esm2_predictions_held_out_v1` (§3.2). Authoritative per-cys probabilities live inline in `cysteine_classifications.evidence` (§3.1); the held-out v1 table disagreed with the published classifications and was producing sub-threshold probabilities under METAL_BINDING / DISULFIDE badges on the domain page. |
+| 2026-05-06 | Migration `scripts/migrations/004_rename_esm2_predictions.sql` renames `cys_classification.esm2_predictions` → `esm2_predictions_held_out_v1`. Authoritative per-cys probabilities live inline in `cysteine_classifications.evidence` (§3.1); the held-out v1 table disagreed with the published classifications and was producing sub-threshold probabilities under METAL_BINDING / DISULFIDE badges on the domain page. |
+| 2026-05-06 | Migration `scripts/migrations/005_drop_esm2_predictions_held_out_v1.sql` drops the held-out v1 table after `getMethodStats` and the four `analysisQueries.ts` argmax queries switched to the published `cysteine_classifications.classification` source (commit `ccf08d4`). 2,644,610 rows dropped. §3 collapsed to the single `evidence`-string source. |

@@ -177,35 +177,27 @@ LEFT JOIN LATERAL (
    WHERE run_id = r.id
 ) c ON TRUE;
 
--- ---------- §3.1 esm2_predictions_held_out_v1: held-out v1 inference ----------
--- Authoritative per-cysteine probabilities live in
--- cysteine_classifications.evidence; this table is the older held-out
--- v1 inference whose values disagree with the published classifications.
--- Kept around for argmax-based coverage analysis (analysisQueries.ts).
+-- ---------- §3.1 cysteine_classifications.evidence: ESM2 prob string ----------
+-- The authoritative per-class probabilities for the published call set
+-- live inline on cys_classification.cysteine_classifications.evidence
+-- as 'esm2_neg:X;esm2_dis:Y;esm2_met:Z' (or 'no_esm2' for
+-- structural-evidence-only calls). Spot-check that the parse round-
+-- trips to (approximately) 1.0 for the ESM2-derived rows.
 INSERT INTO verify_results
-SELECT 'table:cys_classification.esm2_predictions_held_out_v1',
-       CASE WHEN EXISTS (
-         SELECT 1 FROM information_schema.tables
-         WHERE table_schema = 'cys_classification' AND table_name = 'esm2_predictions_held_out_v1'
-       ) THEN 'PASS' ELSE 'MISSING' END,
-       'held-out v1 ESM2 inference; not cited from the domain detail page';
-
--- Probability sum sanity (only when the table exists).
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables
-             WHERE table_schema = 'cys_classification' AND table_name = 'esm2_predictions_held_out_v1') THEN
-    INSERT INTO verify_results
-    SELECT 'data:esm2_predictions_held_out_v1-sum-to-one',
-           CASE WHEN bad = 0 THEN 'PASS' ELSE 'FAIL' END,
-           bad || ' row(s) where neg+dis+met deviates from 1.0 by > 0.01'
-    FROM (
-      SELECT count(*) AS bad
-      FROM cys_classification.esm2_predictions_held_out_v1
-      WHERE abs(neg_prob + dis_prob + met_prob - 1.0) > 0.01
-    ) q;
-  END IF;
-END $$;
+SELECT 'data:cysteine_classifications-evidence-sum-to-one',
+       CASE WHEN bad = 0 THEN 'PASS' ELSE 'FAIL' END,
+       bad || ' ESM2-evidence row(s) where neg+dis+met deviates from 1.0 by > 0.01'
+FROM (
+  SELECT count(*) AS bad
+  FROM (
+    SELECT (regexp_match(evidence, 'esm2_neg:([\d.]+);esm2_dis:([\d.]+);esm2_met:([\d.]+)'))[1]::real AS n,
+           (regexp_match(evidence, 'esm2_neg:([\d.]+);esm2_dis:([\d.]+);esm2_met:([\d.]+)'))[2]::real AS d,
+           (regexp_match(evidence, 'esm2_neg:([\d.]+);esm2_dis:([\d.]+);esm2_met:([\d.]+)'))[3]::real AS m
+    FROM cys_classification.cysteine_classifications
+    WHERE evidence LIKE 'esm2_%'
+  ) p
+  WHERE abs(n + d + m - 1.0) > 0.01
+) q;
 
 -- ---------- §4 missing-piece checks ----------
 INSERT INTO verify_results
