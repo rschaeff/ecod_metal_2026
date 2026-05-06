@@ -80,6 +80,12 @@ LOC_RE = re.compile(r'<location\b[^>]*>([^<]+)</location>')
 COMMENT_RE = re.compile(
     r'<comment\s+type="subcellular location">(.*?)</comment>', re.DOTALL
 )
+# UniProt also annotates subcellular location as a top-level <keyword>;
+# the keyword channel is much denser than the <comment> channel for
+# TrEMBL entries, so we union both to broaden coverage. Keyword tags
+# carry the same controlled vocabulary, so map_compartment() handles
+# them without a separate rule set.
+KEYWORD_RE = re.compile(r'<keyword\b[^>]*>([^<]+)</keyword>')
 ACC_RE = re.compile(r'<accession>([^<]+)</accession>')
 
 
@@ -109,12 +115,21 @@ def parse_one(path: str) -> list[tuple[str, str]]:
     acc = acc_match.group(1).strip()
     seen: set[str] = set()
     out: list[tuple[str, str]] = []
+    # Channel 1: <comment type="subcellular location"><location>X</location>
     for blk in COMMENT_RE.finditer(txt):
         for loc_m in LOC_RE.finditer(blk.group(1)):
             comp = map_compartment(loc_m.group(1))
             if comp and comp not in seen:
                 seen.add(comp)
                 out.append((acc, comp))
+    # Channel 2: <keyword>X</keyword> top-level tags. Same controlled
+    # vocabulary; broadens coverage substantially for TrEMBL entries
+    # whose comment block is sparse.
+    for kw_m in KEYWORD_RE.finditer(txt):
+        comp = map_compartment(kw_m.group(1))
+        if comp and comp not in seen:
+            seen.add(comp)
+            out.append((acc, comp))
     return out
 
 
