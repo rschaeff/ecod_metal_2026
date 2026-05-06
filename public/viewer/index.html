@@ -198,6 +198,37 @@
     const theme = params.get('theme') || 'light';
     const apiBasePath = params.get('basePath') || '';  // e.g., '/ecod2' in production
 
+    // Per-cysteine highlight params for TriCyp. Each is a comma-separated list
+    // of "chain:resnum" or "resnum" entries; bare resnum defaults to chain
+    // taken from the chainId param or 'A'. Colors match the site palette
+    // (red disulfide, green metal-binding, grey free thiol).
+    const metalCysParam = params.get('metalCys');
+    const disulfideCysParam = params.get('disulfideCys');
+    const freeThiolCysParam = params.get('freeThiolCys');
+
+    function parseCysList(s) {
+      if (!s) return [];
+      const fallback = chainId || 'A';
+      return s.split(',').map(part => {
+        const trimmed = part.trim();
+        if (!trimmed) return null;
+        if (trimmed.includes(':')) {
+          const [c, r] = trimmed.split(':');
+          const n = parseInt(r, 10);
+          if (!c || isNaN(n)) return null;
+          return { chain: c, resnum: n };
+        }
+        const n = parseInt(trimmed, 10);
+        if (isNaN(n)) return null;
+        return { chain: fallback, resnum: n };
+      }).filter(Boolean);
+    }
+
+    const metalCysteines = parseCysList(metalCysParam);
+    const disulfideCysteines = parseCysList(disulfideCysParam);
+    const freeThiolCysteines = parseCysList(freeThiolCysParam);
+    const hasCysHighlights = metalCysteines.length + disulfideCysteines.length + freeThiolCysteines.length > 0;
+
     // Determine if this is a full PDB view (multiple domains, no chain filter)
     const isPdbView = domainsParam && !chainId && pdbId;
 
@@ -553,8 +584,8 @@
           const ligandData = parseLigandResidues(ligandResidues);
           setTimeout(() => applyProteinViewStyling(domainsParam, ligandData), 1000);
         } else {
-          // Single domain view: highlight domain region
-          if (segments.length > 0) {
+          // Single domain view: highlight domain region (and cysteines, if any).
+          if (segments.length > 0 || hasCysHighlights) {
             setTimeout(() => highlightDomain(segments), 1000);
           }
 
@@ -582,24 +613,55 @@
       return true;
     }
 
-    // Highlight domain using visual.select
+    // Cysteine-class colors (match the site palette).
+    const CYS_COLOR = {
+      disulfide:  { r: 220, g: 38,  b: 38  },  // red-600
+      metal:      { r: 22,  g: 163, b: 74  },  // green-600
+      freeThiol:  { r: 156, g: 163, b: 175 },  // gray-400
+    };
+
+    // Highlight domain using visual.select. Combines domain segments (in
+    // orange) with optional per-cysteine residue selections (red/green/grey)
+    // into a single selection call so the cys colors render on top of the
+    // domain region.
     async function highlightDomain(segments) {
       if (!viewerInstance) {
         console.warn('No viewer instance for highlighting');
         return;
       }
 
-      console.log('Attempting to highlight segments:', segments);
+      console.log('Attempting to highlight segments:', segments, 'with cys highlights:', hasCysHighlights);
 
       // ECOD ranges use PDB author-assigned chain IDs and residue numbers (e.g., A:70-167)
       // For PDB data, we must use auth_asym_id and auth_residue_number fields
       // struct_asym_id/residue_number are for mmCIF internal identifiers
-      const authSelectionData = segments.map(seg => ({
+      const segSelections = segments.map(seg => ({
         auth_asym_id: seg.chain,
         start_auth_residue_number: seg.start,
         end_auth_residue_number: seg.end,
         color: { r: 234, g: 88, b: 12 },  // orange-600
       }));
+
+      const cysSelections = [
+        // free-thiol first → disulfide → metal so brighter colors win on overlap
+        ...freeThiolCysteines.map(c => ({
+          auth_asym_id: c.chain,
+          auth_residue_number: c.resnum,
+          color: CYS_COLOR.freeThiol,
+        })),
+        ...disulfideCysteines.map(c => ({
+          auth_asym_id: c.chain,
+          auth_residue_number: c.resnum,
+          color: CYS_COLOR.disulfide,
+        })),
+        ...metalCysteines.map(c => ({
+          auth_asym_id: c.chain,
+          auth_residue_number: c.resnum,
+          color: CYS_COLOR.metal,
+        })),
+      ];
+
+      const authSelectionData = [...segSelections, ...cysSelections];
 
       console.log('Selection data (auth):', JSON.stringify(authSelectionData, null, 2));
 
@@ -611,8 +673,8 @@
         });
         console.log('Auth-based visual.select() succeeded');
 
-        // Focus on the selection
-        viewerInstance.visual.focus(authSelectionData.map(s => ({
+        // Focus on the domain segments only (cysteines are subset of those).
+        viewerInstance.visual.focus(segSelections.map(s => ({
           auth_asym_id: s.auth_asym_id,
           start_auth_residue_number: s.start_auth_residue_number,
           end_auth_residue_number: s.end_auth_residue_number,
@@ -622,18 +684,24 @@
       } catch (err) {
         console.error('Auth-based highlight error:', err);
 
-        // Fallback: try struct_asym_id (mmCIF internal identifiers)
+        // Fallback: try struct_asym_id (mmCIF internal identifiers). Cysteine
+        // residues fall back to the same identifier scheme.
         console.log('Trying struct_asym_id parameters as fallback...');
         try {
-          const structSelectionData = segments.map(seg => ({
+          const structSegSelections = segments.map(seg => ({
             struct_asym_id: seg.chain,
             start_residue_number: seg.start,
             end_residue_number: seg.end,
             color: { r: 234, g: 88, b: 12 },
           }));
+          const structCysSelections = [
+            ...freeThiolCysteines.map(c => ({ struct_asym_id: c.chain, residue_number: c.resnum, color: CYS_COLOR.freeThiol })),
+            ...disulfideCysteines.map(c => ({ struct_asym_id: c.chain, residue_number: c.resnum, color: CYS_COLOR.disulfide })),
+            ...metalCysteines.map(c => ({ struct_asym_id: c.chain, residue_number: c.resnum, color: CYS_COLOR.metal })),
+          ];
 
           viewerInstance.visual.select({
-            data: structSelectionData,
+            data: [...structSegSelections, ...structCysSelections],
             nonSelectedColor: { r: 200, g: 200, b: 200 },
           });
           console.log('Struct-based selection succeeded');

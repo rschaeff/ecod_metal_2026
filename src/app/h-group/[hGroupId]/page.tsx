@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getHGroupDetail } from '@/lib/queries';
-import { summaryCache, CACHE_TTL, cachedQuery } from '@/lib/cache';
+import { getHGroupDetail, getDomainClassifications } from '@/lib/queries';
+import { summaryCache, domainCache, CACHE_TTL, cachedQuery } from '@/lib/cache';
 import { HGROUP_HIGHLIGHTS } from '@/lib/paperData';
+import { classifyCysteinesByStructure, encodeCysList } from '@/lib/structurePositions';
 import FigureImage from '@/components/ui/FigureImage';
 import StructureViewer from '@/components/viewer/StructureViewer';
 
@@ -81,6 +82,24 @@ export default async function HGroupDetailPage({ params }: HGroupPageProps) {
   // Pick a representative for each source type for the side-by-side viewer.
   const pdbRep = detail.representatives.find((r) => r.sourceType === 'pdb');
   const afdbRep = detail.representatives.find((r) => r.sourceType !== 'pdb');
+
+  // Load classifications for the chosen representatives so the viewer can
+  // paint per-cysteine colors. Cached per domainDbId; called twice but the
+  // cache + Promise.all keep this cheap.
+  async function classifyRep(rep: typeof pdbRep) {
+    if (!rep) return null;
+    const cls = await cachedQuery(
+      domainCache,
+      `domain-classifications-${rep.domainDbId}`,
+      CACHE_TTL.DOMAIN,
+      () => getDomainClassifications(rep.domainDbId),
+    );
+    return classifyCysteinesByStructure(cls, rep.rangeDefinition);
+  }
+  const [pdbHighlights, afdbHighlights] = await Promise.all([
+    classifyRep(pdbRep),
+    classifyRep(afdbRep),
+  ]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -186,7 +205,11 @@ export default async function HGroupDetailPage({ params }: HGroupPageProps) {
             {pdbRep && pdbRep.pdbId ? (
               <StructureViewer
                 pdbId={pdbRep.pdbId}
-                chainId={null}
+                chainId={pdbRep.chainId}
+                range={pdbRep.rangeDefinition}
+                domainId={pdbRep.domainId}
+                metalCysteines={encodeCysList(pdbHighlights?.metal ?? [])}
+                disulfideCysteines={encodeCysList(pdbHighlights?.disulfide ?? [])}
                 className="w-full h-80"
               />
             ) : (
@@ -223,6 +246,10 @@ export default async function HGroupDetailPage({ params }: HGroupPageProps) {
             {afdbRep && afdbRep.uniprotAcc ? (
               <StructureViewer
                 afId={afdbRep.uniprotAcc}
+                range={afdbRep.rangeDefinition}
+                domainId={afdbRep.domainId}
+                metalCysteines={encodeCysList(afdbHighlights?.metal ?? [])}
+                disulfideCysteines={encodeCysList(afdbHighlights?.disulfide ?? [])}
                 className="w-full h-80"
               />
             ) : (

@@ -316,7 +316,9 @@ export interface HGroupRepresentative {
   domainDbId: number;
   sourceType: string;
   pdbId: string | null;
+  chainId: string | null;
   uniprotAcc: string | null;
+  rangeDefinition: string;
   fGroupId: string;
   fGroupName: string;
   totalCys: number;
@@ -372,8 +374,10 @@ export async function getHGroupDetail(hGroupId: string): Promise<HGroupDetail | 
   const repRows = await query<{
     domain_id: string;
     domain_db_id: number;
+    range_definition: string;
     source_type: string;
     pdb_id: string | null;
+    chain_id: string | null;
     uniprot_acc: string | null;
     f_group_id: string;
     f_group_name: string;
@@ -382,7 +386,8 @@ export async function getHGroupDetail(hGroupId: string): Promise<HGroupDetail | 
     n_metal_binding: number | null;
     n_unclassified: number | null;
   }>(
-    `SELECT d.domain_id, d.id as domain_db_id, p.source_type, p.pdb_id, p.uniprot_acc,
+    `SELECT d.domain_id, d.id as domain_db_id, d.range_definition,
+            p.source_type, p.pdb_id, p.chain_id, p.uniprot_acc,
             fa.f_group_id,
             COALESCE(fc.name, fa.f_group_id) as f_group_name,
             ds.total_cys, ds.n_disulfide, ds.n_metal_binding, ds.n_unclassified
@@ -423,7 +428,9 @@ export async function getHGroupDetail(hGroupId: string): Promise<HGroupDetail | 
       domainDbId: r.domain_db_id,
       sourceType: r.source_type,
       pdbId: r.pdb_id,
+      chainId: r.chain_id,
       uniprotAcc: r.uniprot_acc,
+      rangeDefinition: r.range_definition,
       fGroupId: r.f_group_id,
       fGroupName: r.f_group_name,
       totalCys: r.total_cys ?? 0,

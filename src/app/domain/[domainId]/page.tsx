@@ -5,6 +5,7 @@ import DomainClient from './DomainClient';
 import CopyButton from '@/components/ui/CopyButton';
 import StructureViewer from '@/components/viewer/StructureViewer';
 import { PAPER_REF } from '@/lib/paperData';
+import { classifyCysteinesByStructure, encodeCysList } from '@/lib/structurePositions';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,12 @@ export default async function DomainPage({ params }: DomainPageProps) {
   const nDisulfide = classifications.filter((c) => c.classification === 'DISULFIDE').length;
   const nMetal = classifications.filter((c) => c.classification === 'METAL_BINDING').length;
   const nUnclassified = classifications.filter((c) => c.classification === 'UNCLASSIFIED').length;
+
+  // Map domain-local cysteine positions to source-structure (chain, resnum)
+  // pairs so the 3D viewer can paint them with the canonical site palette.
+  const cysHighlights = classifyCysteinesByStructure(classifications, domainInfo.rangeDefinition);
+  const metalCysParam = encodeCysList(cysHighlights.metal);
+  const disulfideCysParam = encodeCysList(cysHighlights.disulfide);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -102,6 +109,8 @@ export default async function DomainPage({ params }: DomainPageProps) {
                   chainId={domainInfo.chainId}
                   range={domainInfo.rangeDefinition}
                   domainId={domainInfo.domainId}
+                  metalCysteines={metalCysParam}
+                  disulfideCysteines={disulfideCysParam}
                   className="w-full h-72"
                 />
               ) : domainInfo.uniprotAcc ? (
@@ -109,6 +118,8 @@ export default async function DomainPage({ params }: DomainPageProps) {
                   afId={domainInfo.uniprotAcc}
                   range={domainInfo.rangeDefinition}
                   domainId={domainInfo.domainId}
+                  metalCysteines={metalCysParam}
+                  disulfideCysteines={disulfideCysParam}
                   className="w-full h-72"
                 />
               ) : null}

@@ -24,6 +24,13 @@ interface StructureViewerProps {
   nucleicAcidChains?: string[];  // Chain IDs that are RNA/DNA
   showLigands?: boolean;   // Show all ligands/cofactors (default: false)
   showNucleicAcids?: boolean;  // Show RNA/DNA (default: false)
+  // TriCyp per-cysteine highlight params. Comma-separated `chain:resnum`
+  // lists; viewer paints the residues with the canonical site colors
+  // (red disulfide / green metal-binding / grey free thiol). Build with
+  // src/lib/structurePositions.ts → encodeCysList().
+  metalCysteines?: string;
+  disulfideCysteines?: string;
+  freeThiolCysteines?: string;
   className?: string;
 }
 
@@ -41,6 +48,9 @@ export default function StructureViewer({
   nucleicAcidChains,
   showLigands = false,
   showNucleicAcids = false,
+  metalCysteines,
+  disulfideCysteines,
+  freeThiolCysteines,
   className = '',
 }: StructureViewerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -55,7 +65,7 @@ export default function StructureViewer({
   }, []);
 
   // Build viewer URL with parameters (null until client-side timestamp is set)
-  const viewerUrl = mountTime ? buildViewerUrl({ uid, pdbId, afId, customUrl, customFormat, chainId, range, domainId, ligandResidues, domains, nucleicAcidChains, showLigands, showNucleicAcids }, mountTime, resolvedTheme) : null;
+  const viewerUrl = mountTime ? buildViewerUrl({ uid, pdbId, afId, customUrl, customFormat, chainId, range, domainId, ligandResidues, domains, nucleicAcidChains, showLigands, showNucleicAcids, metalCysteines, disulfideCysteines, freeThiolCysteines }, mountTime, resolvedTheme) : null;
 
   // Reset loading state when URL changes (skip initial null -> value transition)
   useEffect(() => {
@@ -70,7 +80,7 @@ export default function StructureViewer({
     timestamp: number,
     theme: 'light' | 'dark'
   ): string | null {
-    const { uid, pdbId, afId, customUrl, customFormat, chainId, range, domainId, ligandResidues, domains, nucleicAcidChains, showLigands, showNucleicAcids } = props;
+    const { uid, pdbId, afId, customUrl, customFormat, chainId, range, domainId, ligandResidues, domains, nucleicAcidChains, showLigands, showNucleicAcids, metalCysteines, disulfideCysteines, freeThiolCysteines } = props;
     // Need either UID (for domain PDB), pdbId/afId (for full structure), or customUrl
     if (uid == null && !pdbId && !afId && !customUrl) return null;
 
@@ -116,6 +126,15 @@ export default function StructureViewer({
     }
     if (showNucleicAcids) {
       params.set('showNucleicAcids', 'true');
+    }
+    if (metalCysteines) {
+      params.set('metalCys', metalCysteines);
+    }
+    if (disulfideCysteines) {
+      params.set('disulfideCys', disulfideCysteines);
+    }
+    if (freeThiolCysteines) {
+      params.set('freeThiolCys', freeThiolCysteines);
     }
 
     // Pass basePath so viewer can construct correct API URLs
