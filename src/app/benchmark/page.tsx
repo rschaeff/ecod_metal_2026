@@ -26,11 +26,11 @@ export const metadata: Metadata = {
 
 const STRATUM_LABEL: Record<string, string> = {
   all: 'All metals',
+  shared_metals: 'Shared metals (Zn/Ca/Mg/Mn)',
   iron_only: 'Iron only',
-  zn: 'Zn',
-  ca: 'Ca',
-  mg: 'Mg',
-  mn: 'Mn',
+  iron_4fe4s: 'Iron · [4Fe-4S]',
+  iron_heme: 'Iron · heme',
+  iron_2fe2s_3fe4s: 'Iron · [2Fe-2S] / [3Fe-4S]',
 };
 
 const TASK_LABEL: Record<BenchmarkRow['task'], string> = {
@@ -90,13 +90,12 @@ export default function BenchmarkPage() {
       </header>
 
       {/* Headline: held-out AUROC + AP for both tasks, all-stratum.
-          The all-metals metal-binding number is iron-dominated by ~83%;
-          the fair-metals (Zn / Ca / Mg / Mn) AUROCs are not yet
-          transcribed, so the panel cites the manuscript narrowing
-          claim in prose rather than displaying numbers we cannot back. */}
+          On the v2 (zinc-rebalanced) benchmark, the all-metals numbers
+          are close across tools; the per-stratum table below shows that
+          the residual differences are entirely on iron coordination. */}
       <section className="mb-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-          Held-out evaluation · b2 dataset
+          Held-out evaluation · v2 (Apr 2026)
         </p>
         <h2 className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-100">
           AUROC and average precision
@@ -133,18 +132,17 @@ export default function BenchmarkPage() {
           ))}
         </div>
         <p className="mt-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed max-w-3xl">
-          The metal-binding all-metals number is iron-dominated — roughly
-          83% of held-out positives are Fe-coordinated, and LMetalSite /
-          GPSite were not trained on Fe / Fe-S / heme cysteine sites. On
-          the metals where all three tools share training coverage
-          (Zn / Ca / Mg / Mn), the AUROC gap narrows from ~8.5 to ~3.7
-          points, and the published narrative is "broader scope plus
-          structural independence", not algorithmic dominance.
-          Average precision (AP) on the imbalanced metal-binding task
-          shows the gap more honestly than AUROC: ESM2-3state {' '}
-          <span className="font-mono">0.621</span> vs LMetalSite{' '}
-          <span className="font-mono">0.138</span> reflects training-
-          objective alignment as much as architecture.
+          On the v2 (zinc-rebalanced) benchmark, all three metal-binding
+          tools score in the same band (AUROC 0.975–0.994) because most
+          held-out positives are zinc — a metal LMetalSite and GPSite
+          were trained on. Stratifying by metal type isolates where
+          ESM2-3state actually differs: on the shared metals (Zn / Ca /
+          Mg / Mn) the AUROC values are essentially tied (0.994–0.996),
+          and the residual difference in the all-metals number comes
+          entirely from iron coordination — Fe-S clusters and especially
+          heme — which the specialist tools were not designed to predict.
+          The per-stratum table below makes the scope-vs-architecture
+          read explicit.
         </p>
       </section>
 
@@ -225,11 +223,10 @@ export default function BenchmarkPage() {
           className="w-full"
         />
 
-        {/* Iron stratum AUROC — demoted from a marquee finding. The
-            iron stratum is shown here because the supplementary numbers
-            are transcribed; Zn/Ca/Mg/Mn live in BENCHMARK_TABLE and
-            currently render as em-dashes until the figure-data CSVs
-            are loaded. */}
+        {/* Iron stratum AUROC — demoted from a marquee finding to
+            one stratum among several. The shared-metals (Zn/Ca/Mg/Mn)
+            and per-iron-cofactor strata live in BENCHMARK_TABLE and
+            render in the per-stratum table below. */}
         <div className="mt-6 bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
             Iron stratum (Fe / Fe-S / heme)
@@ -257,7 +254,7 @@ export default function BenchmarkPage() {
       {/* Tabular summary */}
       <PanelCard
         title="AUROC / AP per tool per stratum"
-        caption="Tabular summary of the benchmark. Iron stratum cells are transcribed from the manuscript supplementary; the all-metals and remaining per-metal strata will be populated once the figure-data CSVs are loaded."
+        caption="Tabular summary of the held-out benchmark (v2, Apr 2026). All-metals AUROC + AP, the shared-metal subset (Zn/Ca/Mg/Mn), and the per-iron-cofactor strata (4Fe-4S, heme, 2Fe-2S/3Fe-4S) are all transcribed from the v2 protocol; per-stratum AP is not reported in the source and renders as em-dashes."
         csvFilename="benchmark_summary.csv"
         csvRows={benchmarkCsvRows}
       >

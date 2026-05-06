@@ -319,21 +319,22 @@ export interface IronOnlyEntry {
 }
 export const BENCHMARK_IRON_ONLY: IronOnlyEntry[] = [
   { tool: 'ESM2-3state',  auroc: 0.993 },
-  { tool: 'LMetalSite',   auroc: 0.917 },
-  { tool: 'GPSite',       auroc: 0.877 },
+  { tool: 'LMetalSite',   auroc: 0.918 },
+  { tool: 'GPSite',       auroc: 0.876 },
 ];
 
 export const BENCHMARK_IRON_ONLY_TEXT =
   'The iron-stratum AUROC gap reflects training-set scope rather than ' +
-  'algorithmic superiority. ESM2-3state was trained directly on cysteine ' +
-  '3-state labels covering Fe / Fe-S / heme coordination; LMetalSite and ' +
-  'GPSite were trained on broader metal-binding objectives that under-' +
-  'cover iron coordination at cysteine residues. On the metals all three ' +
-  'tools share training coverage (Zn / Ca / Mg / Mn) the AUROC gap ' +
-  'narrows from 8.5 to 3.7 points. Iron is roughly 83% of positives in ' +
-  'the held-out set, so the all-metals number is iron-dominated and ' +
-  'should be read alongside this stratification — not as a head-to-head ' +
-  'outperformance claim.';
+  'algorithmic superiority. ESM2-3state was trained directly on ' +
+  'cysteine 3-state labels covering Fe / Fe-S / heme coordination; ' +
+  'LMetalSite and GPSite were trained on Zn / Ca / Mg / Mn binding. On ' +
+  'the metals all three tools share training coverage (Zn / Ca / Mg / ' +
+  'Mn) the AUROC values are essentially tied (0.994–0.996). The ' +
+  'difference shows up specifically on iron coordination, and ' +
+  'particularly on heme (ESM2 0.981 vs LMetalSite 0.838 vs GPSite ' +
+  '0.711) — a sub-domain the specialist tools were not designed for. ' +
+  'Read the iron-stratum advantage as a coverage statement, not a ' +
+  'head-to-head outperformance claim.';
 
 // Fig 2 + Fig S1: per-tool, per-stratum AUROC and AP. Numbers not yet
 // transcribed from the paper figure_data CSVs are marked `null`; the page
@@ -346,32 +347,43 @@ export interface BenchmarkRow {
   ap: number | null;     // average precision
 }
 
-// Numbers transcribed from the 2026-03-23 held-out benchmark on the b2
-// dataset (166,626 cysteines / 48,287 proteins after removing 6,787 with
-// empty AFDB structures). All-metals and disulfide rows are the
-// manuscript "all" stratum; iron-only rows come from the metal-type
-// stratification analysis (Fig S1). Per-metal Zn / Ca / Mg / Mn rows
-// are kept as placeholders until the manuscript figure-data CSVs are
-// loaded.
+// Numbers transcribed from the 2026-04-04 v2 held-out benchmark
+// (results/benchmark/benchmark_v2_protocol.md, marked DEFINITIVE —
+// supersedes all v1 results). Evaluation set: 48,659 proteins /
+// 173,241 cysteines (Met=10,691). The v2 benchmark training data and
+// labels were rebalanced by the Cong lab — Zn went from 8% to 82.5%
+// of metal positives, Iron from 74% to 15.3%. AP is reported only
+// for the "all" stratum (the source doc tables only carry AUROC for
+// the metal-type subsets).
 export const BENCHMARK_TABLE: BenchmarkRow[] = [
-  // Disulfide task — all (no metal-type stratification on disulfides)
-  { tool: 'ESM2-3state',     task: 'disulfide',     stratum: 'all',       auroc: 0.987, ap: 0.969 },
-  { tool: 'SSBONDPredict',   task: 'disulfide',     stratum: 'all',       auroc: 0.975, ap: 0.938 },
-  // Metal-binding — all metals (iron-dominated; read alongside the
-  // fair-metals stratification below).
-  { tool: 'ESM2-3state',     task: 'metal_binding', stratum: 'all',       auroc: 0.979, ap: 0.621 },
-  { tool: 'LMetalSite',      task: 'metal_binding', stratum: 'all',       auroc: 0.894, ap: 0.138 },
-  { tool: 'GPSite',          task: 'metal_binding', stratum: 'all',       auroc: 0.841, ap: 0.069 },
-  // Metal-binding — iron-stratum (~83% of held-out positives).
-  { tool: 'ESM2-3state',     task: 'metal_binding', stratum: 'iron_only', auroc: 0.993, ap: null },
-  { tool: 'LMetalSite',      task: 'metal_binding', stratum: 'iron_only', auroc: 0.917, ap: null },
-  { tool: 'GPSite',          task: 'metal_binding', stratum: 'iron_only', auroc: 0.877, ap: null },
-  // Metal-binding — Zn / Ca / Mg / Mn placeholders. Per RC1 these
-  // make the headline fair-comparison number; transcribe from the
-  // manuscript figure-data CSVs and replace nulls.
-  { tool: 'ESM2-3state',     task: 'metal_binding', stratum: 'zn',        auroc: null, ap: null },
-  { tool: 'LMetalSite',      task: 'metal_binding', stratum: 'zn',        auroc: null, ap: null },
-  { tool: 'GPSite',          task: 'metal_binding', stratum: 'zn',        auroc: null, ap: null },
+  // Disulfide task — all (no metal-type stratification on disulfides).
+  { tool: 'ESM2-3state',     task: 'disulfide',     stratum: 'all',                auroc: 0.987, ap: 0.966 },
+  { tool: 'SSBONDPredict',   task: 'disulfide',     stratum: 'all',                auroc: 0.971, ap: 0.894 },
+  // Metal-binding — all metals.
+  { tool: 'ESM2-3state',     task: 'metal_binding', stratum: 'all',                auroc: 0.994, ap: 0.943 },
+  { tool: 'LMetalSite',      task: 'metal_binding', stratum: 'all',                auroc: 0.979, ap: 0.892 },
+  { tool: 'GPSite',          task: 'metal_binding', stratum: 'all',                auroc: 0.975, ap: 0.881 },
+  // Shared-metal subset (Zn / Ca / Mg / Mn — the four metals
+  // LMetalSite and GPSite were trained on). All three tools are
+  // effectively tied here.
+  { tool: 'ESM2-3state',     task: 'metal_binding', stratum: 'shared_metals',      auroc: 0.996, ap: null },
+  { tool: 'LMetalSite',      task: 'metal_binding', stratum: 'shared_metals',      auroc: 0.994, ap: null },
+  { tool: 'GPSite',          task: 'metal_binding', stratum: 'shared_metals',      auroc: 0.995, ap: null },
+  // Iron stratum — where specialist tools weren't trained.
+  { tool: 'ESM2-3state',     task: 'metal_binding', stratum: 'iron_only',          auroc: 0.993, ap: null },
+  { tool: 'LMetalSite',      task: 'metal_binding', stratum: 'iron_only',          auroc: 0.918, ap: null },
+  { tool: 'GPSite',          task: 'metal_binding', stratum: 'iron_only',          auroc: 0.876, ap: null },
+  // Iron sub-strata — heme is the largest gap (specialist tools
+  // weren't trained on heme-coordinating cysteines at all).
+  { tool: 'ESM2-3state',     task: 'metal_binding', stratum: 'iron_4fe4s',         auroc: 0.995, ap: null },
+  { tool: 'LMetalSite',      task: 'metal_binding', stratum: 'iron_4fe4s',         auroc: 0.920, ap: null },
+  { tool: 'GPSite',          task: 'metal_binding', stratum: 'iron_4fe4s',         auroc: 0.869, ap: null },
+  { tool: 'ESM2-3state',     task: 'metal_binding', stratum: 'iron_heme',          auroc: 0.981, ap: null },
+  { tool: 'LMetalSite',      task: 'metal_binding', stratum: 'iron_heme',          auroc: 0.838, ap: null },
+  { tool: 'GPSite',          task: 'metal_binding', stratum: 'iron_heme',          auroc: 0.711, ap: null },
+  { tool: 'ESM2-3state',     task: 'metal_binding', stratum: 'iron_2fe2s_3fe4s',   auroc: 0.992, ap: null },
+  { tool: 'LMetalSite',      task: 'metal_binding', stratum: 'iron_2fe2s_3fe4s',   auroc: 0.921, ap: null },
+  { tool: 'GPSite',          task: 'metal_binding', stratum: 'iron_2fe2s_3fe4s',   auroc: 0.926, ap: null },
 ];
 
 export const FIG_2_CAPTION =
@@ -381,13 +393,14 @@ export const FIG_2_CAPTION =
   'metal-binding against LMetalSite and GPSite.';
 
 export const FIG_S1_CAPTION =
-  'Metal-type-stratified ROC. The all-metal AUROC is dominated by iron — ' +
-  'roughly 83% of positives in the held-out set are Fe-coordinated. ' +
-  'Stratifying by metal type exposes a training-scope difference: ' +
-  'ESM2-3state was trained on cysteine labels that include Fe / Fe-S / ' +
-  'heme; LMetalSite and GPSite were not. On metals all three tools were ' +
-  'trained for (Zn / Ca / Mg / Mn), AUROC differences narrow ' +
-  'substantially.';
+  'Metal-type-stratified ROC. On the metals all three tools were ' +
+  'trained for (Zn / Ca / Mg / Mn), AUROC values are essentially tied ' +
+  '(0.994–0.996). The differences in the all-metals comparison are ' +
+  'entirely from the iron stratum (Fe-S clusters and heme), where ' +
+  'specialist tools were not designed to predict — heme is the worst ' +
+  'case for them (LMetalSite 0.838, GPSite 0.711 vs ESM2-3state 0.981). ' +
+  'The iron stratum is roughly 15% of held-out metal positives in the ' +
+  'v2 (zinc-rebalanced) benchmark.';
 
 // ----------------------------------------------------------------------------
 // H-group browser (Fig 5A,B) and detail (Fig 5C–E)

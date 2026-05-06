@@ -172,17 +172,20 @@ export default function AboutPage() {
           <Link href="/benchmark" className="text-amber-600 dark:text-amber-400 hover:underline">
             Benchmark
           </Link>{' '}
-          page (paper Fig 2 + Fig S1). The headline finding is that
-          ESM2-3state generalises across metal types where structure-template
-          baselines degrade most on iron coordination — iron-only AUROC reaches{' '}
-          <span className="font-mono font-semibold text-green-700 dark:text-green-300">
-            {BENCHMARK_IRON_ONLY[0].auroc.toFixed(3)}
-          </span>{' '}
+          page (paper Fig 2 + Fig S1). On the held-out v2 (zinc-rebalanced)
+          benchmark, all three metal-binding tools score in the same band
+          on the metals they were trained for (Zn / Ca / Mg / Mn,
+          AUROC 0.994–0.996); ESM2-3state&apos;s residual advantage shows
+          up specifically on iron coordination, where iron-stratum AUROC
+          reaches{' '}
+          <span className="font-mono font-semibold">{BENCHMARK_IRON_ONLY[0].auroc.toFixed(3)}</span>{' '}
           for ESM2-3state versus{' '}
           <span className="font-mono">{BENCHMARK_IRON_ONLY[1].auroc.toFixed(3)}</span>{' '}
           (LMetalSite) and{' '}
           <span className="font-mono">{BENCHMARK_IRON_ONLY[2].auroc.toFixed(3)}</span>{' '}
-          (GPSite).
+          (GPSite). This is a training-coverage difference, not an
+          architectural one — the specialist tools were not designed to
+          predict iron-coordinating cysteines.
         </p>
       </section>
 
