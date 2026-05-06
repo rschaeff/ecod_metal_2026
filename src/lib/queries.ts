@@ -305,6 +305,128 @@ export async function getHGroupSummary(): Promise<HGroupSummary[]> {
   });
 }
 
+// ---- X-group detail (`/x-group/[id]`) ----
+
+export interface XGroupHGroup {
+  hGroupId: string;
+  hGroupName: string;
+  nPdbReps: number;
+  nAfdbReps: number;
+  totalCys: number;
+  nDisulfide: number;
+  nMetalBinding: number;
+  nUnclassified: number;
+}
+
+export interface XGroupDetail {
+  xGroupId: string;
+  xGroupName: string;
+  nHGroups: number;
+  nPdbReps: number;
+  nAfdbReps: number;
+  totalCys: number;
+  nDisulfide: number;
+  nMetalBinding: number;
+  nUnclassified: number;
+  hGroups: XGroupHGroup[];
+}
+
+export async function getXGroupDetail(xGroupId: string): Promise<XGroupDetail | null> {
+  const xRow = await queryOne<{ x_group_id: string; x_group_name: string }>(
+    `SELECT $1 AS x_group_id,
+            COALESCE(c.name, $1) AS x_group_name
+     FROM (SELECT 1) AS dummy
+     LEFT JOIN ecod_rep.cluster c ON c.id::text = $1 AND c.type = 'X'`,
+    [xGroupId],
+  );
+  if (!xRow) return null;
+
+  const rows = await query<{
+    h_group_id: string;
+    h_group_name: string;
+    n_pdb_reps: string;
+    n_afdb_reps: string;
+    total_cys: string;
+    n_disulfide: string;
+    n_metal_binding: string;
+    n_unclassified: string;
+  }>(
+    `SELECT
+        fa.h_group_id,
+        COALESCE(hc.name, fa.h_group_id) AS h_group_name,
+        count(DISTINCT d.id) FILTER (WHERE p.source_type = 'pdb')::text AS n_pdb_reps,
+        count(DISTINCT d.id) FILTER (WHERE p.source_type <> 'pdb')::text AS n_afdb_reps,
+        COALESCE(sum(ds.total_cys), 0)::text AS total_cys,
+        COALESCE(sum(ds.n_disulfide), 0)::text AS n_disulfide,
+        COALESCE(sum(ds.n_metal_binding), 0)::text AS n_metal_binding,
+        COALESCE(sum(ds.n_unclassified), 0)::text AS n_unclassified
+     FROM cys_classification.domain_summary ds
+     JOIN ecod_commons.domains d ON ds.domain_id = d.id
+     JOIN ecod_commons.proteins p ON d.protein_id = p.id
+     JOIN ecod_commons.f_group_assignments fa ON ds.domain_id = fa.domain_id
+     JOIN ecod_commons.domain_clusters dc ON d.id = dc.domain_id
+     JOIN ecod_commons.clustering_runs cr ON dc.clustering_run_id = cr.id
+     LEFT JOIN ecod_rep.cluster hc ON fa.h_group_id = hc.id::text AND hc.type = 'H'
+     WHERE cr.parameter_set_id = 2
+       AND dc.is_representative = TRUE
+       AND fa.x_group_id = $1
+     GROUP BY fa.h_group_id, hc.name
+     HAVING count(DISTINCT d.id) >= 1
+     ORDER BY (count(DISTINCT d.id)) DESC, fa.h_group_id`,
+    [xGroupId],
+  );
+
+  if (rows.length === 0) {
+    // X-group exists in ecod_rep but has no classified F70 reps under it
+    // (or the whole X-group is missing). Return a zero-record shell so the
+    // page can render a friendly empty state instead of 404.
+    return {
+      xGroupId,
+      xGroupName: xRow.x_group_name,
+      nHGroups: 0,
+      nPdbReps: 0,
+      nAfdbReps: 0,
+      totalCys: 0,
+      nDisulfide: 0,
+      nMetalBinding: 0,
+      nUnclassified: 0,
+      hGroups: [],
+    };
+  }
+
+  const hGroups: XGroupHGroup[] = rows.map((r) => ({
+    hGroupId: r.h_group_id,
+    hGroupName: r.h_group_name,
+    nPdbReps: parseInt(r.n_pdb_reps),
+    nAfdbReps: parseInt(r.n_afdb_reps),
+    totalCys: parseInt(r.total_cys),
+    nDisulfide: parseInt(r.n_disulfide),
+    nMetalBinding: parseInt(r.n_metal_binding),
+    nUnclassified: parseInt(r.n_unclassified),
+  }));
+
+  const totals = hGroups.reduce(
+    (acc, h) => {
+      acc.nPdbReps += h.nPdbReps;
+      acc.nAfdbReps += h.nAfdbReps;
+      acc.totalCys += h.totalCys;
+      acc.nDisulfide += h.nDisulfide;
+      acc.nMetalBinding += h.nMetalBinding;
+      acc.nUnclassified += h.nUnclassified;
+      return acc;
+    },
+    { nPdbReps: 0, nAfdbReps: 0, totalCys: 0, nDisulfide: 0, nMetalBinding: 0, nUnclassified: 0 },
+  );
+
+  return {
+    xGroupId,
+    xGroupName: xRow.x_group_name,
+    nHGroups: hGroups.length,
+    ...totals,
+    hGroups,
+  };
+}
+
 // ---- H-group detail (`/h-group/[id]`) ----
 
 export interface HGroupDetail extends HGroupSummary {

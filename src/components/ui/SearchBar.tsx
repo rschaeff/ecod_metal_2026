@@ -53,9 +53,7 @@ export default function SearchBar({ compact = false, placeholder = 'Search domai
     } else if (result.type === 'hgroup') {
       router.push(`/h-group/${encodeURIComponent(result.id)}`);
     } else if (result.type === 'xgroup') {
-      // No dedicated X-group surface; fall back to the family browser scoped
-      // by X-group via the existing browser sort (no kingdom filter applied).
-      router.push(`/family?sortBy=x_group_name`);
+      router.push(`/x-group/${encodeURIComponent(result.id)}`);
     }
   };
 
