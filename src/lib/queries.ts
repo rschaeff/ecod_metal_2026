@@ -574,6 +574,12 @@ export interface SourceTypeBreakdown {
 }
 
 export async function getSourceTypeBreakdown(): Promise<SourceTypeBreakdown[]> {
+  // Restrict to domains the classification pipeline actually ran on. We don't
+  // have a dedicated "ESM2 was scanned" coverage table, so we derive coverage
+  // from the per-domain rollup: a domain with at least one classified cysteine
+  // (n_disulfide + n_metal_binding + n_unclassified > 0) was processed. Without
+  // this filter, source types that exist in `proteins` but never had ESM2 run
+  // (e.g. EPP) appear in the chart with all-zero bars and dilute the panel.
   const rows = await query<{
     source_type: string;
     n_domains: string;
@@ -589,6 +595,9 @@ export async function getSourceTypeBreakdown(): Promise<SourceTypeBreakdown[]> {
      FROM cys_classification.domain_summary ds
      JOIN ecod_commons.domains d ON ds.domain_id = d.id
      JOIN ecod_commons.proteins p ON d.protein_id = p.id
+     WHERE (COALESCE(ds.n_disulfide, 0)
+          + COALESCE(ds.n_metal_binding, 0)
+          + COALESCE(ds.n_unclassified, 0)) > 0
      GROUP BY p.source_type
      ORDER BY count(DISTINCT ds.domain_id) DESC`,
   );
