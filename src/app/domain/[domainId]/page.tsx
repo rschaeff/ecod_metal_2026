@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getDomainDetail, getDomainClassifications, getDomainEvidence } from '@/lib/queries';
 import DomainClient from './DomainClient';
 import CopyButton from '@/components/ui/CopyButton';
+import StructureViewer from '@/components/viewer/StructureViewer';
 import { PAPER_REF } from '@/lib/paperData';
 
 export const dynamic = 'force-dynamic';
@@ -89,6 +90,31 @@ export default async function DomainPage({ params }: DomainPageProps) {
 
         {/* Sidebar (1/3) */}
         <div className="space-y-6">
+          {/* Structure viewer */}
+          {(domainInfo.pdbId || domainInfo.uniprotAcc) && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                3D structure ({domainInfo.sourceType.toUpperCase()})
+              </div>
+              {domainInfo.sourceType === 'pdb' && domainInfo.pdbId ? (
+                <StructureViewer
+                  pdbId={domainInfo.pdbId}
+                  chainId={domainInfo.chainId}
+                  range={domainInfo.rangeDefinition}
+                  domainId={domainInfo.domainId}
+                  className="w-full h-72"
+                />
+              ) : domainInfo.uniprotAcc ? (
+                <StructureViewer
+                  afId={domainInfo.uniprotAcc}
+                  range={domainInfo.rangeDefinition}
+                  domainId={domainInfo.domainId}
+                  className="w-full h-72"
+                />
+              ) : null}
+            </div>
+          )}
+
           {/* Classification Summary */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Classification Summary</h2>

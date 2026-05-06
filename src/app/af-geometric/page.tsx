@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import FigureImage from '@/components/ui/FigureImage';
+import StructureViewer from '@/components/viewer/StructureViewer';
 import {
   FIG_4_THESIS,
   FIG_4_PANELS,
@@ -186,25 +187,61 @@ export default function AfGeometricPage() {
             return (
               <article
                 key={panel.panel}
-                className="grid grid-cols-1 lg:grid-cols-3 gap-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-6"
               >
-                <div className="lg:col-span-2">
-                  <FigureImage
-                    src={`/figures/${panel.imageFilename}`}
-                    alt={`Fig 4${panel.panel} — ${panel.title}`}
-                    label={`Fig 4${panel.panel} · ${panel.title}`}
-                    description={panel.caption}
-                  />
-                  <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                <header>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                     Fig 4{panel.panel}
                   </p>
                   <h3 className="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">
                     {panel.title}
                   </h3>
-                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed max-w-3xl">
                     {panel.caption}
                   </p>
-                </div>
+                </header>
+
+                <FigureImage
+                  src={`/figures/${panel.imageFilename}`}
+                  alt={`Fig 4${panel.panel} — ${panel.title}`}
+                  label={`Fig 4${panel.panel} · ${panel.title}`}
+                  description={panel.caption}
+                />
+
+                {/* Side-by-side live viewers when identifiers are known */}
+                {ex && (ex.afdbId || ex.uniprotAcc || ex.pdbId) && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        AFDB-monomer model
+                      </div>
+                      {ex.uniprotAcc ? (
+                        <StructureViewer afId={ex.uniprotAcc} className="w-full h-80" />
+                      ) : (
+                        <div className="h-80 flex items-center justify-center text-sm text-gray-500 dark:text-gray-400 italic px-4 text-center">
+                          UniProt accession pending — viewer will load once identifier is filled in.
+                        </div>
+                      )}
+                    </div>
+                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        PDB experimental structure
+                      </div>
+                      {ex.pdbId ? (
+                        <StructureViewer
+                          pdbId={ex.pdbId}
+                          chainId={ex.chainId}
+                          className="w-full h-80"
+                        />
+                      ) : (
+                        <div className="h-80 flex items-center justify-center text-sm text-gray-500 dark:text-gray-400 italic px-4 text-center">
+                          PDB ID pending — viewer will load once identifier is filled in.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {ex && <StructureCard example={ex} />}
               </article>
             );

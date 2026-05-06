@@ -58,6 +58,7 @@ export interface DomainInfo {
   sourceType: string;
   pdbId: string | null;
   chainId: string | null;
+  uniprotAcc: string | null;
   xGroupId: string;
   hGroupId: string;
   tGroupId: string;

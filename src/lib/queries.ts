@@ -789,13 +789,15 @@ export async function getDomainDetail(domainIdentifier: string | number): Promis
     source_type: string;
     pdb_id: string | null;
     chain_id: string | null;
+    uniprot_acc: string | null;
     x_group_id: string;
     h_group_id: string;
     t_group_id: string;
     f_group_id: string;
     sequence: string;
   }>(
-    `SELECT d.id, d.domain_id, d.range_definition, p.source_type, p.pdb_id, p.chain_id,
+    `SELECT d.id, d.domain_id, d.range_definition,
+            p.source_type, p.pdb_id, p.chain_id, p.uniprot_acc,
             fa.x_group_id, fa.h_group_id, fa.t_group_id, fa.f_group_id,
             seq.sequence
      FROM ecod_commons.domains d
@@ -815,6 +817,7 @@ export async function getDomainDetail(domainIdentifier: string | number): Promis
     sourceType: row.source_type,
     pdbId: row.pdb_id,
     chainId: row.chain_id,
+    uniprotAcc: row.uniprot_acc,
     xGroupId: row.x_group_id,
     hGroupId: row.h_group_id,
     tGroupId: row.t_group_id,

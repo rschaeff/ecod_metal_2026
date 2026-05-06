@@ -5,6 +5,7 @@ import { getHGroupDetail } from '@/lib/queries';
 import { summaryCache, CACHE_TTL, cachedQuery } from '@/lib/cache';
 import { HGROUP_HIGHLIGHTS } from '@/lib/paperData';
 import FigureImage from '@/components/ui/FigureImage';
+import StructureViewer from '@/components/viewer/StructureViewer';
 
 export const dynamic = 'force-dynamic';
 
@@ -151,69 +152,98 @@ export default async function HGroupDetailPage({ params }: HGroupPageProps) {
             Side-by-side representatives
           </h2>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 max-w-3xl">
-            ESM2-predicted metal-binding cysteines are highlighted in green;
-            sub-threshold cysteines in grey. PDB-source representative on the
-            left, AFDB-source representative on the right.
-            {highlight ? '' : ' Live 3D viewers are a planned follow-up — for now use the external links to inspect the models in RCSB or AlphaFold.'}
+            PDB-source representative on the left, AFDB-source representative
+            on the right. Both viewers load via PDBe Mol* from public CDNs;
+            external links open the corresponding RCSB / AFDB pages.
           </p>
         </header>
 
-        {highlight ? (
-          <FigureImage
-            src={`/figures/${highlight.imageFilename}`}
-            alt={`${highlight.paperFigure} — H-group ${detail.hGroupId} side-by-side`}
-            label={`${highlight.paperFigure} · H-group ${detail.hGroupId}`}
-            description="Side-by-side PDB-source and AFDB-source representatives with ESM2-predicted metal-binding cysteines highlighted."
-            className="w-full"
-          />
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
-              <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                PDB-source representative
-              </p>
-              {pdbRep ? (
-                <>
-                  <p className="mt-2 font-mono text-gray-700 dark:text-gray-300">{pdbRep.domainId}</p>
-                  <p className="mt-1">
-                    <StructureLinks
-                      domainId={pdbRep.domainId}
-                      pdbId={pdbRep.pdbId}
-                      uniprotAcc={pdbRep.uniprotAcc}
-                      sourceType={pdbRep.sourceType}
-                    />
-                  </p>
-                </>
-              ) : (
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 italic">
-                  No PDB-source F70 representative in this H-group.
-                </p>
-              )}
-            </div>
-            <div className="bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
-              <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                AFDB-source representative
-              </p>
-              {afdbRep ? (
-                <>
-                  <p className="mt-2 font-mono text-gray-700 dark:text-gray-300">{afdbRep.domainId}</p>
-                  <p className="mt-1">
-                    <StructureLinks
-                      domainId={afdbRep.domainId}
-                      pdbId={afdbRep.pdbId}
-                      uniprotAcc={afdbRep.uniprotAcc}
-                      sourceType={afdbRep.sourceType}
-                    />
-                  </p>
-                </>
-              ) : (
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 italic">
-                  No AFDB-source F70 representative in this H-group.
-                </p>
-              )}
-            </div>
+        {highlight && (
+          <div className="mb-4">
+            <FigureImage
+              src={`/figures/${highlight.imageFilename}`}
+              alt={`${highlight.paperFigure} — H-group ${detail.hGroupId} side-by-side`}
+              label={`${highlight.paperFigure} · H-group ${detail.hGroupId}`}
+              description="Paper-figure rendering: ESM2-predicted metal-binding cysteines highlighted in magenta, sub-threshold cysteines in grey."
+              className="w-full"
+            />
           </div>
         )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* PDB-source rep */}
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <span className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                PDB-source representative
+              </span>
+              {pdbRep && (
+                <span className="font-mono text-xs text-gray-700 dark:text-gray-300">
+                  {pdbRep.domainId}
+                </span>
+              )}
+            </div>
+            {pdbRep && pdbRep.pdbId ? (
+              <StructureViewer
+                pdbId={pdbRep.pdbId}
+                chainId={null}
+                className="w-full h-80"
+              />
+            ) : (
+              <div className="h-80 flex items-center justify-center text-sm text-gray-500 dark:text-gray-400 italic px-4 text-center">
+                {pdbRep
+                  ? 'PDB representative has no PDB ID — cannot render structure.'
+                  : 'No PDB-source F70 representative in this H-group.'}
+              </div>
+            )}
+            {pdbRep && (
+              <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 text-xs">
+                <StructureLinks
+                  domainId={pdbRep.domainId}
+                  pdbId={pdbRep.pdbId}
+                  uniprotAcc={pdbRep.uniprotAcc}
+                  sourceType={pdbRep.sourceType}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* AFDB-source rep */}
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <span className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                AFDB-source representative
+              </span>
+              {afdbRep && (
+                <span className="font-mono text-xs text-gray-700 dark:text-gray-300">
+                  {afdbRep.domainId}
+                </span>
+              )}
+            </div>
+            {afdbRep && afdbRep.uniprotAcc ? (
+              <StructureViewer
+                afId={afdbRep.uniprotAcc}
+                className="w-full h-80"
+              />
+            ) : (
+              <div className="h-80 flex items-center justify-center text-sm text-gray-500 dark:text-gray-400 italic px-4 text-center">
+                {afdbRep
+                  ? 'AFDB representative has no UniProt accession — cannot render structure.'
+                  : 'No AFDB-source F70 representative in this H-group.'}
+              </div>
+            )}
+            {afdbRep && (
+              <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 text-xs">
+                <StructureLinks
+                  domainId={afdbRep.domainId}
+                  pdbId={afdbRep.pdbId}
+                  uniprotAcc={afdbRep.uniprotAcc}
+                  sourceType={afdbRep.sourceType}
+                />
+              </div>
+            )}
+          </div>
+        </div>
 
         {highlight && (
           <div className="mt-4 flex flex-wrap gap-2">

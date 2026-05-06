@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>ECOD Structure Viewer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    #wrapper {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    /* Mol* renders into this container */
+    #viewer-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #666;
+      z-index: 1000;
+      background: rgba(255,255,255,0.9);
+      padding: 20px;
+      border-radius: 8px;
+    }
+    #loading .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e5e7eb;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    #error {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #dc2626;
+      padding: 20px;
+      display: none;
+      z-index: 1000;
+      background: rgba(255,255,255,0.9);
+      border-radius: 8px;
+    }
+    /* Bottom left controls - OUTSIDE viewer container */
+    #controls {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      z-index: 1000;
+      display: none;
+      gap: 3px;
+      background: rgba(255,255,255,0.95);
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    #controls button {
+      padding: 4px 8px;
+      font-size: 11px;
+      background: transparent;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #4b5563;
+      transition: all 0.15s;
+    }
+    #controls button:hover {
+      background: #f3f4f6;
+      color: #111827;
+    }
+    #controls button.active {
+      background: #3b82f6;
+      color: white;
+    }
+    #controls button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #controls .divider {
+      width: 1px;
+      background: #e5e7eb;
+      margin: 2px 4px;
+    }
+    /* Top left info - OUTSIDE viewer container */
+    #info {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.95);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      display: none;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    #info .title {
+      font-weight: 600;
+      color: #111827;
+    }
+    #info .subtitle {
+      color: #6b7280;
+      font-family: monospace;
+      font-size: 10px;
+    }
+    /* Hide Mol* default controls */
+    .msp-viewport-controls,
+    .msp-highlight-info {
+      display: none !important;
+    }
+  </style>
+  <!-- PDBe Mol* Viewer -->
+  <link rel="stylesheet" type="text/css" href="https://www.ebi.ac.uk/pdbe/pdb-component-library/css/pdbe-molstar-3.1.3.css">
+  <script type="text/javascript" src="https://www.ebi.ac.uk/pdbe/pdb-component-library/js/pdbe-molstar-plugin-3.1.3.js"></script>
+</head>
+<body>
+  <!-- Wrapper contains everything -->
+  <div id="wrapper">
+    <!-- Mol* renders into this dedicated container -->
+    <div id="viewer-container"></div>
+
+    <!-- UI overlays - outside viewer container so Mol* can't touch them -->
+    <div id="loading">
+      <div class="spinner"></div>
+      <div>Loading structure...</div>
+    </div>
+    <div id="error">
+      <p style="font-size: 16px; margin-bottom: 8px;">Unable to load structure</p>
+      <p id="error-detail" style="font-size: 12px; color: #666;"></p>
+    </div>
+    <div id="info">
+      <div class="title" id="domain-label">Domain</div>
+      <div class="subtitle" id="range-label"></div>
+    </div>
+    <div id="controls">
+      <button onclick="setViewMode('domain')" id="mode-domain" class="active" title="Domain structure only">Domain</button>
+      <button onclick="setViewMode('context')" id="mode-context" title="Domain in chain context">In Context</button>
+      <div class="divider"></div>
+      <button onclick="resetView()" title="Reset camera">Reset</button>
+      <button onclick="toggleSpin()" id="spin-btn" title="Toggle rotation">Spin</button>
+    </div>
+  </div>
+
+  <script>
+    let viewerInstance = null;
+    let isSpinning = false;
+    let currentViewMode = 'domain';
+    let isInitializing = false;
+
+    // Parse URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const uid = params.get('uid');
+    const pdbId = params.get('pdb');
+    const chainId = params.get('chain');
+    const range = params.get('range');
+    const domainId = params.get('domain');
+    const afId = params.get('af');
+    const requestedMode = params.get('mode'); // 'domain' or 'context'
+    const ligandResidues = params.get('ligands'); // e.g., "B:401,B:402,B:404"
+    const domainsParam = params.get('domains'); // JSON array of {range, colorIndex} for protein/PDB view
+    const showLigands = params.get('showLigands') === 'true';  // Show all ligands
+    const showNucleicAcids = params.get('showNucleicAcids') === 'true';  // Show RNA/DNA
+    const naChains = params.get('naChains');  // Comma-separated nucleic acid chain IDs
+    const nucleicAcidChainIds = naChains ? naChains.split(',') : [];
+    const customUrl = params.get('customUrl');  // Arbitrary URL to a PDB/CIF file
+    const customFormat = params.get('customFormat') || 'mmcif';  // Format for customUrl
+    const theme = params.get('theme') || 'light';
+    const apiBasePath = params.get('basePath') || '';  // e.g., '/ecod2' in production
+
+    // Determine if this is a full PDB view (multiple domains, no chain filter)
+    const isPdbView = domainsParam && !chainId && pdbId;
+
+    // Theme-aware colors
+    const isDarkMode = theme === 'dark';
+    const bgColor = isDarkMode ? { r: 26, g: 26, b: 26 } : { r: 255, g: 255, b: 255 };
+    const uiBgColor = isDarkMode ? 'rgba(38, 38, 38, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+    const uiBorderColor = isDarkMode ? '#4b5563' : '#d1d5db';
+    const uiTextColor = isDarkMode ? '#e5e7eb' : '#374151';
+    const uiTextMutedColor = isDarkMode ? '#9ca3af' : '#6b7280';
+    const uiTitleColor = isDarkMode ? '#f3f4f6' : '#111827';
+    const uiHoverBg = isDarkMode ? '#374151' : '#f3f4f6';
+
+    console.log('Viewer params:', { uid, pdbId, chainId, range, domainId, afId, requestedMode, ligandResidues, domainsParam, showLigands, showNucleicAcids, nucleicAcidChainIds, isPdbView, theme });
+
+    // Apply theme styles to UI elements
+    function applyThemeStyles() {
+      // Loading overlay
+      const loading = document.getElementById('loading');
+      if (loading) {
+        loading.style.background = uiBgColor;
+        loading.style.color = uiTextColor;
+      }
+
+      // Error overlay
+      const error = document.getElementById('error');
+      if (error) {
+        error.style.background = uiBgColor;
+      }
+
+      // Info panel
+      const info = document.getElementById('info');
+      if (info) {
+        info.style.background = uiBgColor;
+        info.style.borderColor = uiBorderColor;
+        info.style.color = uiTextColor;
+      }
+      const domainLabel = document.getElementById('domain-label');
+      if (domainLabel) {
+        domainLabel.style.color = uiTitleColor;
+      }
+      const rangeLabel = document.getElementById('range-label');
+      if (rangeLabel) {
+        rangeLabel.style.color = uiTextMutedColor;
+      }
+
+      // Controls panel
+      const controls = document.getElementById('controls');
+      if (controls) {
+        controls.style.background = uiBgColor;
+        controls.style.borderColor = uiBorderColor;
+      }
+
+      // Control buttons
+      const buttons = document.querySelectorAll('#controls button');
+      buttons.forEach(btn => {
+        btn.style.color = uiTextColor;
+        btn.addEventListener('mouseenter', () => {
+          if (!btn.classList.contains('active')) {
+            btn.style.background = uiHoverBg;
+          }
+        });
+        btn.addEventListener('mouseleave', () => {
+          if (!btn.classList.contains('active')) {
+            btn.style.background = 'transparent';
+          }
+        });
+      });
+
+      // Divider
+      const divider = document.querySelector('#controls .divider');
+      if (divider) {
+        divider.style.background = uiBorderColor;
+      }
+    }
+
+    // Apply theme immediately
+    applyThemeStyles();
+
+    // Set body background to match theme (visible briefly during load)
+    document.body.style.background = isDarkMode ? '#1a1a1a' : '#ffffff';
+
+    // Color palette for multiple domains (matches the page colors)
+    const domainColorPalette = [
+      { r: 59, g: 130, b: 246 },   // blue-500
+      { r: 249, g: 115, b: 22 },   // orange-500
+      { r: 34, g: 197, b: 94 },    // green-500
+      { r: 168, g: 85, b: 247 },   // purple-500
+      { r: 236, g: 72, b: 153 },   // pink-500
+      { r: 6, g: 182, b: 212 },    // cyan-500
+      { r: 245, g: 158, b: 11 },   // amber-500
+      { r: 99, g: 102, b: 241 },   // indigo-500
+      { r: 244, g: 63, b: 94 },    // rose-500
+      { r: 20, g: 184, b: 166 },   // teal-500
+    ];
+
+    // Cleanup function to properly dispose viewer and WebGL contexts
+    function destroyViewer() {
+      console.log('destroyViewer called, viewerInstance:', !!viewerInstance);
+      if (viewerInstance) {
+        try {
+          // Try to clear - don't await, just fire and forget
+          if (typeof viewerInstance.clear === 'function') {
+            viewerInstance.clear();
+          }
+        } catch (e) {
+          console.warn('Error clearing viewer:', e);
+        }
+        viewerInstance = null;
+      }
+
+      // Completely remove and recreate the container to ensure clean state
+      const oldContainer = document.getElementById('viewer-container');
+      if (oldContainer) {
+        // Force release any WebGL contexts first
+        const canvases = oldContainer.querySelectorAll('canvas');
+        canvases.forEach(canvas => {
+          try {
+            const gl = canvas.getContext('webgl') || canvas.getContext('webgl2');
+            if (gl) {
+              const ext = gl.getExtension('WEBGL_lose_context');
+              if (ext) ext.loseContext();
+            }
+          } catch (e) {
+            console.warn('Error releasing WebGL context:', e);
+          }
+        });
+
+        // Remove old container and create fresh one
+        const parent = oldContainer.parentNode;
+        const newContainer = document.createElement('div');
+        newContainer.id = 'viewer-container';
+        parent.replaceChild(newContainer, oldContainer);
+        console.log('Viewer container replaced with fresh element');
+      }
+    }
+
+    // Parse range string - handles both formats:
+    // PDB format: "A:70-167" or "A:1-70,A:169-344" or "A:77P-119P" (with chain prefix)
+    // AlphaFold format: "1-260" or "1-70,169-344" (no chain prefix, assumes chain A)
+    function parseRange(rangeStr) {
+      if (!rangeStr) return [];
+      const segments = [];
+      const parts = rangeStr.split(',');
+      for (const part of parts) {
+        // Try PDB format first: "CHAIN:start-end"
+        let match = part.trim().match(/([A-Za-z0-9]+):(-?\d+[A-Za-z]?)-(-?\d+[A-Za-z]?)/);
+        if (match) {
+          segments.push({
+            chain: match[1],
+            start: parseInt(match[2]),
+            end: parseInt(match[3])
+          });
+        } else {
+          // Try AlphaFold format: "start-end" (no chain, assume A)
+          match = part.trim().match(/^(-?\d+[A-Za-z]?)-(-?\d+[A-Za-z]?)$/);
+          if (match) {
+            segments.push({
+              chain: 'A',  // AlphaFold structures use chain A
+              start: parseInt(match[1]),
+              end: parseInt(match[2])
+            });
+          }
+        }
+      }
+      console.log('Parsed range:', rangeStr, '->', segments);
+      return segments;
+    }
+
+    // Parse ligand residues string - format: "B:401,B:402,B:404"
+    function parseLigandResidues(ligandStr) {
+      if (!ligandStr) return [];
+      const residues = [];
+      const parts = ligandStr.split(',');
+      for (const part of parts) {
+        const match = part.trim().match(/([A-Za-z0-9]+):(-?\d+[A-Za-z]?)/);
+        if (match) {
+          residues.push({
+            chain: match[1],
+            resNum: parseInt(match[2])
+          });
+        }
+      }
+      console.log('Parsed ligand residues:', ligandStr, '->', residues);
+      return residues;
+    }
+
+    function showError(message) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+      document.getElementById('error-detail').textContent = message || '';
+    }
+
+    function showViewer() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('controls').style.display = 'flex';
+
+      // Hide Domain/Context toggle for protein view (multiple domains)
+      if (domainsParam) {
+        document.getElementById('mode-domain').style.display = 'none';
+        document.getElementById('mode-context').style.display = 'none';
+        // Also hide the divider
+        const divider = document.querySelector('#controls .divider');
+        if (divider) divider.style.display = 'none';
+      }
+
+      if (domainId || range) {
+        document.getElementById('info').style.display = 'block';
+        document.getElementById('domain-label').textContent = domainId || 'Domain';
+        document.getElementById('range-label').textContent = range || '';
+      }
+    }
+
+    // Check if domain PDB file exists
+    async function checkDomainPdbExists() {
+      if (!uid) return false;
+      try {
+        const response = await fetch(`${apiBasePath}/api/domain/${uid}/pdb`, { method: 'HEAD' });
+        return response.ok;
+      } catch {
+        return false;
+      }
+    }
+
+    // Load domain-only structure (pre-cut PDB file)
+    async function loadDomainStructure() {
+      if (!uid) {
+        showError('No domain UID provided');
+        return false;
+      }
+
+      // Check if domain PDB exists, fall back to context view if not
+      const pdbExists = await checkDomainPdbExists();
+      if (!pdbExists) {
+        console.log('Domain PDB not found, falling back to context view');
+        if (pdbId || afId) {
+          document.getElementById('mode-domain').disabled = true;
+          document.getElementById('mode-domain').title = 'Pre-cut domain PDB not available';
+          currentViewMode = 'context';
+          document.getElementById('mode-domain').classList.remove('active');
+          document.getElementById('mode-context').classList.add('active');
+          return loadContextStructure();
+        } else {
+          showError('Domain structure not available');
+          return false;
+        }
+      }
+
+      destroyViewer();
+
+      const container = document.getElementById('viewer-container');
+      if (!container) {
+        console.error('Viewer container not found');
+        showError('Viewer container not found');
+        return false;
+      }
+
+      console.log('Creating new PDBeMolstarPlugin for domain view');
+      viewerInstance = new PDBeMolstarPlugin();
+
+      const options = {
+        customData: {
+          url: `${apiBasePath}/api/domain/${uid}/pdb`,
+          format: 'pdb'
+        },
+        hideControls: true,
+        hideCanvasControls: ['selection', 'animation', 'controlToggle', 'controlInfo'],
+        bgColor: bgColor,
+        lighting: 'plastic',
+        selectInteraction: false,
+        pdbeLink: false,
+        sequencePanel: false,
+      };
+
+      console.log('Loading domain structure with options:', options);
+
+      // Set up load complete handler
+      viewerInstance.events.loadComplete.subscribe(() => {
+        console.log('Domain structure loaded successfully');
+        showViewer();
+      });
+
+      // Set up error handler
+      viewerInstance.events.error?.subscribe?.((e) => {
+        console.error('Mol* error event:', e);
+      });
+
+      try {
+        await viewerInstance.render(container, options);
+        console.log('Domain render() completed');
+      } catch (renderErr) {
+        console.error('Error in render():', renderErr);
+        showError('Failed to render structure: ' + renderErr.message);
+        return false;
+      }
+      return true;
+    }
+
+    // Load full structure with domain highlighted
+    async function loadContextStructure() {
+      console.log('loadContextStructure called, pdbId:', pdbId, 'afId:', afId);
+
+      if (!pdbId && !afId) {
+        console.log('No pdbId or afId, falling back to domain view');
+        return loadDomainStructure();
+      }
+
+      destroyViewer();
+
+      const container = document.getElementById('viewer-container');
+      if (!container) {
+        console.error('Viewer container not found');
+        showError('Viewer container not found');
+        return false;
+      }
+
+      const segments = parseRange(range);
+
+      console.log('Creating new PDBeMolstarPlugin for context view');
+      viewerInstance = new PDBeMolstarPlugin();
+
+      const options = {
+        hideControls: true,
+        hideCanvasControls: ['selection', 'animation', 'controlToggle', 'controlInfo'],
+        bgColor: bgColor,
+        lighting: 'plastic',
+        selectInteraction: false,
+        pdbeLink: false,
+        sequencePanel: false,
+      };
+
+      if (pdbId) {
+        options.moleculeId = pdbId.toLowerCase();
+        console.log('Using moleculeId:', options.moleculeId);
+      } else if (afId) {
+        options.customData = {
+          url: `https://alphafold.ebi.ac.uk/files/AF-${afId}-F1-model_v6.cif`,
+          format: 'mmcif'
+        };
+        console.log('Using AlphaFold customData');
+      }
+
+      console.log('Loading context structure with options:', options);
+
+      // Set up load complete handler
+      viewerInstance.events.loadComplete.subscribe(() => {
+        console.log('Context structure loaded successfully');
+        showViewer();
+
+        // Check if this is a protein view (multiple domains with colors)
+        if (domainsParam) {
+          // Protein view: apply multi-domain coloring
+          const ligandData = parseLigandResidues(ligandResidues);
+          setTimeout(() => applyProteinViewStyling(domainsParam, ligandData), 1000);
+        } else {
+          // Single domain view: highlight domain region
+          if (segments.length > 0) {
+            setTimeout(() => highlightDomain(segments), 1000);
+          }
+
+          // Highlight ligands after domain highlighting
+          const ligandData = parseLigandResidues(ligandResidues);
+          if (ligandData.length > 0) {
+            setTimeout(() => highlightLigands(ligandData), 1500);
+          }
+        }
+      });
+
+      // Set up error handler
+      viewerInstance.events.error?.subscribe?.((e) => {
+        console.error('Mol* error event:', e);
+      });
+
+      try {
+        await viewerInstance.render(container, options);
+        console.log('Context render() completed');
+      } catch (renderErr) {
+        console.error('Error in render():', renderErr);
+        showError('Failed to render structure: ' + renderErr.message);
+        return false;
+      }
+      return true;
+    }
+
+    // Highlight domain using visual.select
+    async function highlightDomain(segments) {
+      if (!viewerInstance) {
+        console.warn('No viewer instance for highlighting');
+        return;
+      }
+
+      console.log('Attempting to highlight segments:', segments);
+
+      // ECOD ranges use PDB author-assigned chain IDs and residue numbers (e.g., A:70-167)
+      // For PDB data, we must use auth_asym_id and auth_residue_number fields
+      // struct_asym_id/residue_number are for mmCIF internal identifiers
+      const authSelectionData = segments.map(seg => ({
+        auth_asym_id: seg.chain,
+        start_auth_residue_number: seg.start,
+        end_auth_residue_number: seg.end,
+        color: { r: 234, g: 88, b: 12 },  // orange-600
+      }));
+
+      console.log('Selection data (auth):', JSON.stringify(authSelectionData, null, 2));
+
+      try {
+        // Apply selection with non-selected color
+        viewerInstance.visual.select({
+          data: authSelectionData,
+          nonSelectedColor: { r: 200, g: 200, b: 200 },  // gray
+        });
+        console.log('Auth-based visual.select() succeeded');
+
+        // Focus on the selection
+        viewerInstance.visual.focus(authSelectionData.map(s => ({
+          auth_asym_id: s.auth_asym_id,
+          start_auth_residue_number: s.start_auth_residue_number,
+          end_auth_residue_number: s.end_auth_residue_number,
+        })));
+        console.log('Auth-based visual.focus() succeeded');
+
+      } catch (err) {
+        console.error('Auth-based highlight error:', err);
+
+        // Fallback: try struct_asym_id (mmCIF internal identifiers)
+        console.log('Trying struct_asym_id parameters as fallback...');
+        try {
+          const structSelectionData = segments.map(seg => ({
+            struct_asym_id: seg.chain,
+            start_residue_number: seg.start,
+            end_residue_number: seg.end,
+            color: { r: 234, g: 88, b: 12 },
+          }));
+
+          viewerInstance.visual.select({
+            data: structSelectionData,
+            nonSelectedColor: { r: 200, g: 200, b: 200 },
+          });
+          console.log('Struct-based selection succeeded');
+        } catch (err2) {
+          console.error('Struct-based selection also failed:', err2);
+        }
+      }
+    }
+
+    // Highlight ligands with CPK coloring (used for single domain view)
+    async function highlightLigands(ligandResidues) {
+      if (!viewerInstance || !ligandResidues.length) {
+        console.log('No viewer or ligands to highlight');
+        return;
+      }
+
+      console.log('Attempting to highlight ligands:', ligandResidues);
+
+      // Build selection data for each ligand residue
+      const ligandSelectionData = ligandResidues.map(lig => ({
+        auth_asym_id: lig.chain,
+        auth_residue_number: lig.resNum,
+        // Green color for ligands to distinguish from domain (orange)
+        color: { r: 34, g: 197, b: 94 },  // green-500
+        representation: 'ball-and-stick',
+      }));
+
+      try {
+        // Use highlight to show ligands without changing domain coloring
+        viewerInstance.visual.highlight({
+          data: ligandSelectionData,
+        });
+        console.log('Ligand highlight applied');
+      } catch (err) {
+        console.warn('Ligand highlight failed, trying alternative approach:', err);
+        // Ligand highlighting is optional - don't fail if it doesn't work
+      }
+    }
+
+    // Apply protein/PDB view styling with multiple domains in different colors
+    async function applyProteinViewStyling(domainsData, ligandData) {
+      if (!viewerInstance) {
+        console.warn('No viewer instance for protein view styling');
+        return;
+      }
+
+      console.log('Applying protein/PDB view styling:', { domainsData, ligandData, isPdbView });
+
+      try {
+        // Parse domains if passed as JSON string
+        let domains = [];
+        if (domainsData) {
+          try {
+            domains = JSON.parse(domainsData);
+          } catch (e) {
+            console.warn('Failed to parse domains JSON:', e);
+          }
+        }
+
+        // Build selection data for all domains with rotating colors
+        const allSelections = [];
+        domains.forEach((domain, index) => {
+          // Use explicit colorIndex if provided (PDB view), otherwise use index
+          const colorIdx = domain.colorIndex !== undefined ? domain.colorIndex : index;
+          const color = domainColorPalette[colorIdx % domainColorPalette.length];
+          const segments = parseRange(domain.range);
+
+          segments.forEach(seg => {
+            allSelections.push({
+              auth_asym_id: seg.chain,
+              start_auth_residue_number: seg.start,
+              end_auth_residue_number: seg.end,
+              color: color,
+            });
+          });
+        });
+
+        if (allSelections.length > 0) {
+          // Apply domain coloring with gray for non-selected protein regions
+          // Note: nonSelectedColor applies to protein only, not nucleic acids/ligands
+          viewerInstance.visual.select({
+            data: allSelections,
+            nonSelectedColor: { r: 180, g: 180, b: 180 },  // neutral gray for unclassified protein
+          });
+          console.log('Multi-domain coloring applied:', allSelections.length, 'selections');
+
+          // For PDB view, don't focus on domains - show full structure
+          // For protein/chain view, focus on the domains
+          if (!isPdbView) {
+            viewerInstance.visual.focus(allSelections.map(s => ({
+              auth_asym_id: s.auth_asym_id,
+              start_auth_residue_number: s.start_auth_residue_number,
+              end_auth_residue_number: s.end_auth_residue_number,
+            })));
+          }
+        }
+
+        // Color nucleic acids with a distinctive color (gold/yellow)
+        // This overrides the gray nonSelectedColor for RNA/DNA
+        if (nucleicAcidChainIds.length > 0) {
+          setTimeout(() => applyNucleicAcidColoring(nucleicAcidChainIds), 500);
+        }
+
+        console.log('Protein view styling complete');
+
+      } catch (err) {
+        console.error('Protein view styling error:', err);
+      }
+    }
+
+    // Apply distinctive coloring to nucleic acids (RNA/DNA)
+    async function applyNucleicAcidColoring(naChainIds) {
+      if (!viewerInstance || !naChainIds || naChainIds.length === 0) return;
+
+      console.log('Applying nucleic acid coloring to chains:', naChainIds);
+
+      try {
+        // Build selection data for nucleic acid chains
+        // Use a gold/orange color for nucleic acids
+        const naColor = { r: 255, g: 180, b: 50 };  // Gold/orange
+
+        const naSelections = naChainIds.map(chainId => ({
+          auth_asym_id: chainId,
+          color: naColor,
+        }));
+
+        // Apply coloring to nucleic acid chains
+        // This should override the gray nonSelectedColor for these chains
+        viewerInstance.visual.select({
+          data: naSelections,
+        });
+
+        console.log('Nucleic acid coloring applied to', naChainIds.length, 'chains');
+
+      } catch (err) {
+        console.warn('Nucleic acid coloring failed:', err);
+
+        // Try alternative approach: use highlight instead
+        try {
+          const naHighlights = naChainIds.map(chainId => ({
+            auth_asym_id: chainId,
+            color: { r: 255, g: 180, b: 50 },
+          }));
+
+          viewerInstance.visual.highlight({
+            data: naHighlights,
+          });
+          console.log('Nucleic acid highlight applied as fallback');
+        } catch (err2) {
+          console.warn('Nucleic acid highlight also failed:', err2);
+        }
+      }
+    }
+
+    // Initialize viewer
+    // Load structure from an arbitrary URL (used for EPP predicted structures)
+    async function loadCustomStructure() {
+      if (!customUrl) {
+        showError('No custom URL provided');
+        return false;
+      }
+
+      destroyViewer();
+
+      const container = document.getElementById('viewer-container');
+      if (!container) {
+        showError('Viewer container not found');
+        return false;
+      }
+
+      console.log('Creating PDBeMolstarPlugin for custom URL:', customUrl, 'format:', customFormat);
+      viewerInstance = new PDBeMolstarPlugin();
+
+      const options = {
+        customData: {
+          url: customUrl,
+          format: customFormat === 'cif' ? 'mmcif' : customFormat
+        },
+        hideControls: true,
+        hideCanvasControls: ['selection', 'animation', 'controlToggle', 'controlInfo'],
+        bgColor: bgColor,
+        lighting: 'plastic',
+        selectInteraction: false,
+        pdbeLink: false,
+        sequencePanel: false,
+      };
+
+      viewerInstance.events.loadComplete.subscribe(() => {
+        console.log('Custom structure loaded successfully');
+        showViewer();
+      });
+
+      viewerInstance.events.error?.subscribe?.((e) => {
+        console.error('Mol* error event:', e);
+      });
+
+      try {
+        await viewerInstance.render(container, options);
+      } catch (renderErr) {
+        console.error('Error rendering custom structure:', renderErr);
+        showError('Failed to render structure: ' + renderErr.message);
+        return false;
+      }
+      return true;
+    }
+
+    async function initViewer() {
+      // Prevent double initialization
+      if (isInitializing) {
+        console.log('Already initializing, skipping');
+        return;
+      }
+      isInitializing = true;
+      console.log('Initializing viewer, timestamp:', Date.now());
+
+      // Ensure clean state on init (handles soft reload)
+      destroyViewer();
+
+      // Small delay to ensure DOM is clean before creating new viewer
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      if (!uid && !pdbId && !afId && !customUrl) {
+        showError('No structure identifier provided');
+        return;
+      }
+
+      // Reset UI state
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('error').style.display = 'none';
+      document.getElementById('controls').style.display = 'none';
+      document.getElementById('info').style.display = 'none';
+
+      try {
+        // Custom URL mode: load directly from an arbitrary URL (e.g., EPP structures)
+        if (customUrl) {
+          await loadCustomStructure();
+          return;
+        }
+
+        // Determine which mode to use
+        // If mode=context requested, or no UID available, use context mode
+        const useContextMode = requestedMode === 'context' || !uid;
+
+        if (useContextMode) {
+          currentViewMode = 'context';
+          document.getElementById('mode-domain').classList.remove('active');
+          document.getElementById('mode-context').classList.add('active');
+          await loadContextStructure();
+        } else {
+          // Default to domain mode when UID is available
+          currentViewMode = 'domain';
+          await loadDomainStructure();
+        }
+      } catch (error) {
+        console.error('Viewer initialization error:', error);
+        showError(error.message || 'Failed to initialize viewer');
+      } finally {
+        isInitializing = false;
+      }
+    }
+
+    // Switch view modes by reloading page with different params
+    // (Mol* doesn't handle destroy/recreate well due to global state)
+    function setViewMode(mode) {
+      if (mode === currentViewMode) return;
+
+      const domainBtn = document.getElementById('mode-domain');
+      if (mode === 'domain' && domainBtn.disabled) return;
+
+      // Build new URL with mode parameter
+      const newParams = new URLSearchParams(window.location.search);
+      newParams.set('mode', mode);
+
+      // Reload page with new mode
+      window.location.search = newParams.toString();
+    }
+
+    function resetView() {
+      if (viewerInstance) {
+        viewerInstance.visual.reset({ camera: true });
+      }
+    }
+
+    function toggleSpin() {
+      if (viewerInstance) {
+        isSpinning = !isSpinning;
+        viewerInstance.visual.toggleSpin(isSpinning);
+        document.getElementById('spin-btn').classList.toggle('active', isSpinning);
+      }
+    }
+
+    // Listen for messages from parent iframe
+    window.addEventListener('message', (event) => {
+      if (!event.data || event.data.target !== 'ecod-viewer') return;
+      const { action, value } = event.data;
+      switch (action) {
+        case 'reset': resetView(); break;
+        case 'spin': toggleSpin(); break;
+        case 'viewMode': setViewMode(value); break;
+        case 'destroy': destroyViewer(); break;
+      }
+    });
+
+    // Wait for PDBeMolstarPlugin to be available (CDN script may load slowly)
+    function waitForPlugin(callback, maxWait) {
+      const start = Date.now();
+      const check = () => {
+        if (typeof PDBeMolstarPlugin !== 'undefined') {
+          callback();
+        } else if (Date.now() - start < maxWait) {
+          setTimeout(check, 100);
+        } else {
+          showError('Structure viewer failed to load. Please refresh the page.');
+        }
+      };
+      check();
+    }
+
+    // Initialize on DOM ready, after plugin is available
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => waitForPlugin(initViewer, 15000));
+    } else {
+      waitForPlugin(initViewer, 15000);
+    }
+
+    // Cleanup on page unload (multiple handlers for browser compatibility)
+    window.addEventListener('beforeunload', destroyViewer);
+    window.addEventListener('pagehide', destroyViewer);  // For bfcache
+    window.addEventListener('unload', destroyViewer);
+
+    // Handle page show (back/forward navigation with bfcache)
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) {
+        // Page was restored from bfcache, force reinitialize
+        console.log('Page restored from bfcache, reinitializing');
+        isInitializing = false;  // Reset flag to allow reinit
+        initViewer();
+      }
+    });
+  </script>
+</body>
+</html>
