@@ -9,6 +9,11 @@ import {
 } from '@/lib/downloads';
 import { PAPER_REF } from '@/lib/paperData';
 import { RATE_LIMIT_CONFIG } from '@/lib/rateLimit';
+import {
+  API_ENDPOINTS,
+  API_COMMON_ERROR_CODES,
+  API_ENVELOPE_DESCRIPTION,
+} from '@/lib/apiExamples';
 
 export const dynamic = 'force-dynamic';
 
@@ -161,39 +166,6 @@ function DownloadRow({ entry, status }: { entry: DownloadEntry; status: FileStat
   );
 }
 
-const API_ROUTES = [
-  {
-    method: 'GET',
-    path: '/api/domain/{domainId}',
-    description: 'Per-cysteine predictions and structural evidence for one domain.',
-    example: '/api/domain/e3h35A1',
-  },
-  {
-    method: 'GET',
-    path: '/api/family/{fGroupId}',
-    description: 'Aggregate stats and paginated domain list for one F-group.',
-    example: '/api/family/131.1.1.0?page=1&limit=50&sortBy=n_metal_binding&sortDir=desc',
-  },
-  {
-    method: 'GET',
-    path: '/api/hgroup/{hGroupId}',
-    description: 'Per-H-group aggregate plus full F70 representative list.',
-    example: '/api/hgroup/3380.1',
-  },
-  {
-    method: 'GET',
-    path: '/api/search?q=…',
-    description: 'Search domain ID, PDB ID, F-group, or UniProt accession. Same matcher as the header search bar.',
-    example: '/api/search?q=e3h35A1',
-  },
-  {
-    method: 'GET',
-    path: '/api/summary',
-    description: 'Top-level dashboard counts (domains, cysteines, classification breakdown).',
-    example: '/api/summary',
-  },
-];
-
 export default async function DownloadsPage() {
   const [bulkStatuses, figureStatuses, generatedAt] = await Promise.all([
     Promise.all(BULK_DATA.map(statEntry)),
@@ -305,52 +277,153 @@ export default async function DownloadsPage() {
       </section>
 
       {/* REST API */}
-      <section className="mb-12">
+      <section id="api" className="mb-12 scroll-mt-20">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
           REST API
         </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 max-w-3xl">
-          Read-only JSON endpoints. Every response uses the same envelope —{' '}
-          <code className="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded">
-            {`{ success: boolean, data?: …, error?: { code, message } }`}
-          </code>
-          {' '}— so callers can branch on a single field. No authentication
-          required.
-        </p>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 max-w-3xl">
-          <strong>Rate limit:</strong>{' '}
-          <span className="font-mono">
-            {RATE_LIMIT_CONFIG.limit} requests / {Math.round(RATE_LIMIT_CONFIG.windowMs / 1000)} s per IP
-          </span>
-          . Responses include{' '}
-          <code className="font-mono">X-RateLimit-Limit</code>,{' '}
-          <code className="font-mono">X-RateLimit-Remaining</code>, and{' '}
-          <code className="font-mono">X-RateLimit-Reset</code> headers.
-          Exceeding the limit returns <code className="font-mono">429</code>{' '}
-          with a <code className="font-mono">Retry-After</code> header.
-        </p>
-        <div className="space-y-3">
-          {API_ROUTES.map((r) => (
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-5 mb-6 max-w-3xl">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">
+            Common contract
+          </h3>
+          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
+            Read-only JSON endpoints. No authentication required.{' '}
+            {API_ENVELOPE_DESCRIPTION.split('`').map((segment, i) =>
+              i % 2 === 0 ? (
+                <span key={i}>{segment}</span>
+              ) : (
+                <code key={i} className="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded">{segment}</code>
+              ),
+            )}
+          </p>
+          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+            <strong>Rate limit:</strong>{' '}
+            <span className="font-mono">
+              {RATE_LIMIT_CONFIG.limit} requests / {Math.round(RATE_LIMIT_CONFIG.windowMs / 1000)} s per IP
+            </span>
+            . Responses include{' '}
+            <code className="font-mono">X-RateLimit-Limit</code>,{' '}
+            <code className="font-mono">X-RateLimit-Remaining</code>, and{' '}
+            <code className="font-mono">X-RateLimit-Reset</code> headers.
+            Exceeding the limit returns <code className="font-mono">429</code>{' '}
+            with a <code className="font-mono">Retry-After</code> header.
+          </p>
+        </div>
+
+        {/* Per-endpoint documentation */}
+        <div className="space-y-6">
+          {API_ENDPOINTS.map((ep) => (
             <article
-              key={r.path}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+              key={ep.path}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-5"
             >
-              <div className="flex items-baseline gap-3 flex-wrap">
+              <header className="flex items-baseline gap-3 flex-wrap mb-3">
                 <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300">
-                  {r.method}
+                  {ep.method}
                 </span>
                 <code className="font-mono text-sm text-gray-900 dark:text-gray-100">
-                  {r.path}
+                  {ep.path}
                 </code>
+              </header>
+              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                {ep.shortDescription}
+              </p>
+              {ep.longDescription && (
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                  {ep.longDescription}
+                </p>
+              )}
+
+              {ep.queryParams && ep.queryParams.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                    Query parameters
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="text-xs">
+                      <thead>
+                        <tr className="text-left text-gray-500 dark:text-gray-400">
+                          <th className="pr-4 pb-1 font-medium">Name</th>
+                          <th className="pr-4 pb-1 font-medium">Default</th>
+                          <th className="pb-1 font-medium">Description</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-gray-700 dark:text-gray-300">
+                        {ep.queryParams.map((q) => (
+                          <tr key={q.name} className="align-top">
+                            <td className="pr-4 py-1 font-mono">{q.name}</td>
+                            <td className="pr-4 py-1 font-mono">{q.default ?? '—'}</td>
+                            <td className="py-1">{q.description}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                  Example request
+                </p>
+                <p className="font-mono text-xs break-all">
+                  <a
+                    href={ep.exampleRequest}
+                    className="text-amber-600 dark:text-amber-400 hover:underline"
+                  >
+                    {ep.method} {ep.exampleRequest}
+                  </a>
+                </p>
               </div>
-              <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-                {r.description}
-              </p>
-              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 font-mono break-all">
-                example: <a href={r.example} className="text-amber-600 dark:text-amber-400 hover:underline">{r.example}</a>
-              </p>
+
+              <div className="mt-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                  Example response
+                </p>
+                <pre className="text-xs font-mono whitespace-pre-wrap bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded p-3 overflow-x-auto leading-relaxed">
+                  {ep.exampleResponse}
+                </pre>
+              </div>
+
+              {ep.errorCodes && ep.errorCodes.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                    Possible error codes
+                  </p>
+                  <p className="text-xs font-mono text-gray-700 dark:text-gray-300">
+                    {ep.errorCodes.join(', ')}
+                  </p>
+                </div>
+              )}
             </article>
           ))}
+        </div>
+
+        {/* Error code reference */}
+        <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">
+            Error codes
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-xs">
+              <thead>
+                <tr className="text-left text-gray-500 dark:text-gray-400">
+                  <th className="pr-6 pb-1 font-medium">Code</th>
+                  <th className="pr-6 pb-1 font-medium">HTTP</th>
+                  <th className="pb-1 font-medium">Description</th>
+                </tr>
+              </thead>
+              <tbody className="text-gray-700 dark:text-gray-300">
+                {API_COMMON_ERROR_CODES.map((e) => (
+                  <tr key={e.code} className="align-top">
+                    <td className="pr-6 py-1 font-mono">{e.code}</td>
+                    <td className="pr-6 py-1 font-mono">{e.status}</td>
+                    <td className="py-1">{e.description}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
