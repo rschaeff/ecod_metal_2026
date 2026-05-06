@@ -46,7 +46,9 @@ WITH required AS (
     ('cys_classification','domain_summary'),
     ('cys_classification','geometric_disulfides'),
     ('cys_classification','pdb_ssbonds'),
-    ('cys_classification','pdb_metal_links')
+    ('cys_classification','pdb_metal_links'),
+    ('cys_classification','esm2_runs'),
+    ('cys_classification','esm2_run_domains')
   ) AS t(schema, name)
 )
 INSERT INTO verify_results
@@ -89,7 +91,13 @@ WITH required_cols AS (
     ('cys_classification','geometric_disulfides','sg_sg_distance'),
     ('cys_classification','pdb_ssbonds','both_in_domain'),
     ('cys_classification','pdb_metal_links','metal'),
-    ('cys_classification','pdb_metal_links','cofactor')
+    ('cys_classification','pdb_metal_links','cofactor'),
+    ('cys_classification','esm2_runs','run_label'),
+    ('cys_classification','esm2_runs','model_card'),
+    ('cys_classification','esm2_runs','thresholds'),
+    ('cys_classification','esm2_runs','domain_count'),
+    ('cys_classification','esm2_run_domains','run_id'),
+    ('cys_classification','esm2_run_domains','domain_id')
   ) AS t(schema, name, col)
 )
 INSERT INTO verify_results
@@ -147,6 +155,27 @@ FROM (
   ) joined
   WHERE total_cys IS DISTINCT FROM live_total
 ) q;
+
+-- ---------- §2.12 esm2_runs: paper-v1 exists and domain_count matches ----------
+INSERT INTO verify_results
+SELECT 'data:esm2_runs-paper-v1',
+       CASE
+         WHEN r.id IS NULL THEN 'MISSING'
+         WHEN r.domain_count IS DISTINCT FROM live_count THEN 'FAIL'
+         ELSE 'PASS'
+       END,
+       CASE
+         WHEN r.id IS NULL THEN 'no row with run_label = paper-v1'
+         ELSE 'header.domain_count=' || r.domain_count ||
+              ', membership=' || live_count
+       END
+FROM (SELECT 1 AS pin) p
+LEFT JOIN cys_classification.esm2_runs r ON r.run_label = 'paper-v1'
+LEFT JOIN LATERAL (
+  SELECT count(*) AS live_count
+    FROM cys_classification.esm2_run_domains
+   WHERE run_id = r.id
+) c ON TRUE;
 
 -- ---------- §3.1 esm2_predictions: conditionally required ----------
 INSERT INTO verify_results

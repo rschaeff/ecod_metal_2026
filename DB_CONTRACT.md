@@ -152,7 +152,47 @@ PDB SSBOND records. Schema mirrors `geometric_disulfides` plus:
 | `pdb_id` | `text` | Source PDB code. |
 | `both_in_domain` | `bool` | True iff both endpoints fall inside the domain's `range_definition`. |
 
-### 2.12 `cys_classification.pdb_metal_links`
+### 2.12 `cys_classification.esm2_runs` and `esm2_run_domains`
+
+Records the F70-representative input scope of each ESM2-3state inference
+run. Decoupled from `ecod_commons.domain_clusters` because the live F70 set
+drifts with each ECOD update; the published dataset must reference a frozen
+snapshot of the domains that the model was actually applied to. The
+manuscript scope is `run_label = 'paper-v1'` (domain_count = 691,078, which
+agrees with `PAPER_TOTALS.domains` in `src/lib/paperData.ts`). 3,275 of
+those domains are no longer in the live F70 rep set, so any "manuscript
+reproducibility" query MUST filter on `esm2_run_domains.run_id` instead of
+joining to live `domain_clusters` + `clustering_runs`.
+
+`esm2_runs`:
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `int` | Primary key. |
+| `run_label` | `text` | Unique. `'paper-v1'` for the manuscript scope. |
+| `description` | `text` | Free-form provenance. |
+| `model_card` | `text` | Model + head identifier (`'ESM2-t33-650M-UR50D + 3-state head'`). |
+| `thresholds` | `jsonb` | `{disulfide, metal_binding}`; mirrors `BENCHMARK_THRESHOLDS`. |
+| `parameter_set_id` | `int \| null` | FK to `clustering_parameters` (F70 = 2). |
+| `ecod_version` | `text \| null` | Free-form ECOD release pin when available. |
+| `domain_count` | `int` | Cached count of `esm2_run_domains` rows for this run. |
+| `created_at` | `timestamptz` | Insertion time. |
+
+`esm2_run_domains`:
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `run_id` | `int` | FK to `esm2_runs.id`, ON DELETE CASCADE. |
+| `domain_id` | `int` | FK to `ecod_commons.domains.id`. |
+
+Composite PK `(run_id, domain_id)`; secondary index on `domain_id` for the
+"is this domain in scope?" check.
+
+**Open issue**: cys-free F70 reps in the original ESM2 input list are not
+yet captured (they have no row in `domain_summary` to bootstrap from).
+Backfill from the inference input manifest when it is recovered.
+
+### 2.13 `cys_classification.pdb_metal_links`
 
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -335,3 +375,4 @@ it works as a deployment gate.
 | --- | --- |
 | 2026-05-05 | Initial contract drafted from `src/lib/queries.ts` HEAD `436d5b2`. |
 | 2026-05-05 | Migrations `scripts/migrations/001_hgroup_summary.sql` and `002_uniprot_subcellular.sql` create §4.1 MV (3352 H-groups, 5 ms cached read) and §4.2 empty table. `getHGroupSummary()` is ready to swap to `SELECT * FROM cys_classification.hgroup_summary` — frontend swap is the next step. `uniprot_subcellular` ETL still pending. |
+| 2026-05-06 | Migration `scripts/migrations/003_esm2_runs.sql` adds `esm2_runs` + `esm2_run_domains` (§2.12). Bootstrap `paper-v1` row and 691,078 domain memberships; 3,275 of those have already drifted out of the live F70 rep set. |
