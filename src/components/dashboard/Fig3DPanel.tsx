@@ -25,7 +25,6 @@ const csvRows: (string | number)[][] = [
 export default function Fig3DPanel() {
   return (
     <PanelCard
-      figureLabel="Fig 3D"
       title="Subcellular localization (eukaryotic)"
       caption={FIG_3D_CAPTION}
       csvFilename="fig3d_subcellular.csv"

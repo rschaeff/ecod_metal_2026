@@ -3,17 +3,12 @@
 import { useState, type ReactNode } from 'react';
 
 interface PanelCardProps {
-  figureLabel: string;        // e.g., "Fig 3A"
   title: string;              // short panel title
   caption: string;            // paper-aligned caption
   csvFilename: string;        // download filename, e.g., "fig3a.csv"
   csvRows: (string | number)[][];  // first row is header
   children: ReactNode;        // the chart itself
   anchor?: string;            // optional id for /paper and /about jump links
-  // 'live' = numbers came from a current DB query;
-  // 'paper-snapshot' = panel is rendering paper-frozen constants because
-  // the live query returned no data. Omit when the panel has no live path.
-  dataSource?: 'live' | 'paper-snapshot';
 }
 
 function rowsToCsv(rows: (string | number)[][]): string {
@@ -30,14 +25,12 @@ function rowsToCsv(rows: (string | number)[][]): string {
 }
 
 export default function PanelCard({
-  figureLabel,
   title,
   caption,
   csvFilename,
   csvRows,
   children,
   anchor,
-  dataSource,
 }: PanelCardProps) {
   const [showData, setShowData] = useState(false);
 
@@ -60,31 +53,9 @@ export default function PanelCard({
       className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 scroll-mt-20"
     >
       <header className="flex items-baseline justify-between gap-4 mb-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-2">
-            <span>{figureLabel}</span>
-            {dataSource === 'live' && (
-              <span
-                title="Numbers computed from a live database query"
-                className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.5 text-[10px] font-medium normal-case tracking-normal"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden />
-                Live
-              </span>
-            )}
-            {dataSource === 'paper-snapshot' && (
-              <span
-                title="DB query returned no rows; panel is rendering paper-frozen constants"
-                className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 text-[10px] font-medium normal-case tracking-normal"
-              >
-                Paper snapshot
-              </span>
-            )}
-          </p>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-0.5">
-            {title}
-          </h2>
-        </div>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          {title}
+        </h2>
         <div className="flex items-center gap-3 text-sm">
           <button
             type="button"

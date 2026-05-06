@@ -57,7 +57,6 @@ export default function Fig3CPanel({ taxonomy }: Fig3CPanelProps) {
 
   return (
     <PanelCard
-      figureLabel="Fig 3C"
       title="Per-kingdom classification rates"
       caption={FIG_3C_CAPTION}
       csvFilename="fig3c_kingdom_rates.csv"

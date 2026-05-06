@@ -27,7 +27,6 @@ const csvRows: (string | number)[][] = [
 export default function Fig3APanel() {
   return (
     <PanelCard
-      figureLabel="Fig 3A"
       title="Cysteine fates by classification source"
       caption={FIG_3A_CAPTION}
       csvFilename="fig3a_source_stratification.csv"

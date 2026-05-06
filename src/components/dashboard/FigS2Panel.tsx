@@ -36,7 +36,6 @@ export default function FigS2Panel({ sources }: FigS2PanelProps) {
 
   return (
     <PanelCard
-      figureLabel="Fig S2"
       title="Source-type breakdown"
       caption={FIG_S2_CAPTION}
       csvFilename="figS2_source_breakdown.csv"

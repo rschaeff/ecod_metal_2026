@@ -51,6 +51,21 @@ export default async function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/h-group" className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400">
+                  H-Groups
+                </Link>
+              </li>
+              <li>
+                <Link href="/benchmark" className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400">
+                  Benchmark
+                </Link>
+              </li>
+              <li>
+                <Link href="/af-geometric" className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400">
+                  AF Geometric
+                </Link>
+              </li>
+              <li>
                 <Link href="/downloads" className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400">
                   Downloads &amp; API
                 </Link>

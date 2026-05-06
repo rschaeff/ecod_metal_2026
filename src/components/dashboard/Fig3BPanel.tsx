@@ -58,13 +58,11 @@ export default function Fig3BPanel({ taxonomy }: Fig3BPanelProps) {
 
   return (
     <PanelCard
-      figureLabel="Fig 3B"
       title="Domain vs cysteine fraction by kingdom"
       caption={FIG_3B_CAPTION}
       csvFilename="fig3b_kingdom_fractions.csv"
       csvRows={csvRows}
       anchor="fig3b"
-      dataSource={dataSource}
     >
       <ResponsiveContainer width="100%" height={260}>
         <BarChart

@@ -179,7 +179,6 @@ export default function BenchmarkPage() {
 
       {/* Tabular summary */}
       <PanelCard
-        figureLabel="Fig 2 + S1"
         title="AUROC / AP per tool per stratum"
         caption="Tabular summary of the benchmark. Iron-only AUROC values are filled in from the manuscript headline finding; remaining cells will be populated once the paper figure-data CSVs are loaded."
         csvFilename="benchmark_summary.csv"

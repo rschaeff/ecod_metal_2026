@@ -6,14 +6,13 @@ import { useState } from 'react';
 import ThemeToggle from '../ui/ThemeToggle';
 import SearchBar from '../ui/SearchBar';
 
+// Logo links to '/', so 'Dashboard' is omitted. About + AF Geometric live in
+// the footer to keep the top bar uncrowded — they are reachable from /paper.
 const navLinks = [
-  { href: '/', label: 'Dashboard' },
-  { href: '/benchmark', label: 'Benchmark' },
-  { href: '/af-geometric', label: 'AF Geometric' },
+  { href: '/family', label: 'Browse' },
   { href: '/h-group', label: 'H-Groups' },
-  { href: '/family', label: 'Browse Families' },
+  { href: '/benchmark', label: 'Benchmark' },
   { href: '/downloads', label: 'Downloads' },
-  { href: '/about', label: 'About' },
   { href: '/paper', label: 'Paper' },
 ];
 
@@ -28,9 +27,6 @@ export default function Header() {
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center">
               <span className="text-xl font-bold text-amber-600 dark:text-amber-400">TriCyp</span>
-              <span className="ml-2 text-sm text-gray-500 dark:text-gray-400 hidden xl:inline">
-                Three-state cysteine classification
-              </span>
             </Link>
           </div>
 
