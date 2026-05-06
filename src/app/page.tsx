@@ -3,11 +3,13 @@ import {
   getConfidenceDistribution,
   getSuperkingdomBreakdown,
   getSourceTypeBreakdown,
+  getSubcellularDistribution,
 } from '@/lib/queries';
 import type {
   ConfidenceBucket,
   SuperkingdomBreakdown,
   SourceTypeBreakdown,
+  SubcellularDistributionRow,
 } from '@/lib/queries';
 import { summaryCache, CACHE_TTL, cachedQuery } from '@/lib/cache';
 import SearchBar from '@/components/ui/SearchBar';
@@ -45,14 +47,16 @@ export default async function DashboardPage() {
   let confidence: ConfidenceBucket[] = [];
   let taxonomy: SuperkingdomBreakdown[] = [];
   let sources: SourceTypeBreakdown[] = [];
+  let subcellular: SubcellularDistributionRow[] = [];
   let dbError = false;
 
   try {
-    [summary, confidence, taxonomy, sources] = await Promise.all([
+    [summary, confidence, taxonomy, sources, subcellular] = await Promise.all([
       cachedQuery(summaryCache, 'dashboard-summary', CACHE_TTL.SUMMARY, getDashboardSummary),
       cachedQuery(summaryCache, 'confidence-distribution', CACHE_TTL.SUMMARY, getConfidenceDistribution),
       cachedQuery(summaryCache, 'superkingdom-breakdown', CACHE_TTL.SUMMARY, getSuperkingdomBreakdown),
       cachedQuery(summaryCache, 'source-type-breakdown', CACHE_TTL.SUMMARY, getSourceTypeBreakdown),
+      cachedQuery(summaryCache, 'subcellular-distribution', CACHE_TTL.SUMMARY, getSubcellularDistribution),
     ]);
   } catch (e) {
     console.error('Dashboard DB error:', e);
@@ -149,7 +153,7 @@ export default async function DashboardPage() {
           <Fig3BPanel taxonomy={taxonomy} />
           <Fig3CPanel taxonomy={taxonomy} />
         </div>
-        <Fig3DPanel />
+        <Fig3DPanel subcellular={subcellular} />
       </div>
 
       {/* Supplementary panels */}

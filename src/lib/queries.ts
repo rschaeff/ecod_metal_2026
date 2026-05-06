@@ -607,6 +607,63 @@ export async function getSourceTypeBreakdown(): Promise<SourceTypeBreakdown[]> {
   }));
 }
 
+// ---- Subcellular distribution (Fig 3D) ----
+//
+// One row per compartment. Domains are scoped to:
+//   - paper-v1 inference scope (esm2_run_domains.run_id = 1),
+//   - source_type = 'afdb' (AlphaFold-derived predicted-source domains),
+//   - eukaryotic superkingdom,
+//   - uniprot_acc with at least one row in cys_classification.uniprot_subcellular.
+// A domain with multiple compartment annotations contributes to each row.
+
+export interface SubcellularDistributionRow {
+  compartment: string;
+  nDomains: number;
+  totalCys: number;
+  nDisulfide: number;
+  nMetal: number;
+}
+
+export async function getSubcellularDistribution(): Promise<SubcellularDistributionRow[]> {
+  const rows = await query<{
+    compartment: string;
+    n_domains: string;
+    total_cys: string;
+    n_disulfide: string;
+    n_metal: string;
+  }>(
+    `WITH eukaryote_scope AS (
+       SELECT rd.domain_id, p.uniprot_acc
+         FROM cys_classification.esm2_run_domains rd
+         JOIN ecod_commons.domains  d  ON rd.domain_id = d.id
+         JOIN ecod_commons.proteins p  ON d.protein_id = p.id
+         JOIN ecod_commons.protein_taxonomy pt
+              ON p.source_id = pt.source_id AND p.source_type = pt.source_type
+        WHERE rd.run_id = ${PAPER_V1_RUN_ID}
+          AND p.source_type = 'afdb'
+          AND p.uniprot_acc IS NOT NULL
+          AND pt.superkingdom = 'Eukaryota'
+     )
+     SELECT us.compartment,
+            count(DISTINCT es.domain_id)::text                    AS n_domains,
+            COALESCE(sum(ds.total_cys), 0)::text                  AS total_cys,
+            COALESCE(sum(ds.n_disulfide), 0)::text                AS n_disulfide,
+            COALESCE(sum(ds.n_metal_binding), 0)::text            AS n_metal
+       FROM eukaryote_scope es
+       JOIN cys_classification.uniprot_subcellular us ON us.uniprot_acc = es.uniprot_acc
+       JOIN cys_classification.domain_summary ds      ON ds.domain_id   = es.domain_id
+      GROUP BY us.compartment`,
+  );
+
+  return rows.map((r) => ({
+    compartment: r.compartment,
+    nDomains: parseInt(r.n_domains),
+    totalCys: parseInt(r.total_cys),
+    nDisulfide: parseInt(r.n_disulfide),
+    nMetal: parseInt(r.n_metal),
+  }));
+}
+
 // ---- Confidence Distribution ----
 
 export interface ConfidenceBucket {
