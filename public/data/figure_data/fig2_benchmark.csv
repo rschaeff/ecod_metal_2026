@@ -1,0 +1,6 @@
+tool,task,stratum,auroc,ap,n_pos,n_total
+ESM2-3state,disulfide,all,0.9868,0.9664,33541,173233
+SSBONDPredict,disulfide,all,0.9707,0.8942,33541,173241
+ESM2-3state,metal_binding,all,0.9939,0.9432,10691,173233
+LMetalSite,metal_binding,all,0.9792,0.8918,10691,173241
+GPSite,metal_binding,all,0.9753,0.8806,10689,173044

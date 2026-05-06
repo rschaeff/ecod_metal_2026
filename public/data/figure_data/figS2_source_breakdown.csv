@@ -1,0 +1,4 @@
+source_type,n_domains,total_cys,free_thiol_pct,disulfide_pct,metal_pct
+afdb,602474,2435246,76.69,17.02,6.28
+pdb,48048,157480,70.30,24.54,5.16
+uniparc,18284,51884,84.15,5.62,10.23

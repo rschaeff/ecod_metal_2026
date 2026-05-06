@@ -1,0 +1,16 @@
+tool,task,stratum,auroc,ap,n_pos,n_total
+ESM2-3state,metal_binding,shared_metals,0.9957,0.9458,8623,171165
+LMetalSite,metal_binding,shared_metals,0.9942,0.9322,8623,171173
+GPSite,metal_binding,shared_metals,0.9962,0.944,8621,170976
+ESM2-3state,metal_binding,iron_only,0.9928,0.5939,1569,164111
+LMetalSite,metal_binding,iron_only,0.9172,0.2092,1569,164119
+GPSite,metal_binding,iron_only,0.8774,0.1141,1569,163924
+ESM2-3state,metal_binding,iron_4fe4s,0.9948,0.431,924,163466
+LMetalSite,metal_binding,iron_4fe4s,0.9195,0.1297,924,163474
+GPSite,metal_binding,iron_4fe4s,0.8709,0.053,924,163279
+ESM2-3state,metal_binding,iron_heme,0.9906,0.1525,136,162678
+LMetalSite,metal_binding,iron_heme,0.8375,0.0025,136,162686
+GPSite,metal_binding,iron_heme,0.7062,0.0014,136,162491
+ESM2-3state,metal_binding,iron_2fe2s_3fe4s,0.9922,0.3598,382,162924
+LMetalSite,metal_binding,iron_2fe2s_3fe4s,0.9204,0.1031,382,162932
+GPSite,metal_binding,iron_2fe2s_3fe4s,0.9257,0.0626,382,162737

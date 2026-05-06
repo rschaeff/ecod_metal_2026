@@ -1,0 +1,4 @@
+source,n_domains,free_thiol_frac,disulfide_frac,metal_frac
+PDB-geom,157480,0.668,0.241,0.091
+PDB-ESM,157480,0.741,0.187,0.072
+AFDB-ESM,533598,0.785,0.157,0.058

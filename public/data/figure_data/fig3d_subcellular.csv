@@ -1,0 +1,9 @@
+compartment,n_domains,total_cys,n_disulfide,n_metal_binding,disulfide_pct,metal_pct
+Nucleus,45198,198066,4496,29010,2.27,14.65
+Cytoplasm,32545,148253,8088,9790,5.46,6.60
+Plasma membrane,16167,91634,40699,999,44.41,1.09
+Extracellular,12395,71180,64473,107,90.58,0.15
+Mitochondrion,9065,33988,1906,1343,5.61,3.95
+Endoplasmic ret.,7653,34240,7085,1472,20.69,4.30
+Golgi,6103,31405,9588,840,30.53,2.67
+Lysosome,1178,6585,2043,217,31.03,3.30

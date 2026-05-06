@@ -1,0 +1,4 @@
+kingdom,n_domains,total_cys,free_thiol_pct,disulfide_pct,metal_pct
+Eukaryota,429759,2006198,73.73,20.55,5.72
+Bacteria,146933,380497,88.92,4.42,6.67
+Archaea,108379,297768,84.64,6.74,8.63
