@@ -216,10 +216,10 @@ export default function BenchmarkPage() {
           </p>
         </header>
         <FigureImage
-          src="/figures/figS1_iron_only_roc.png"
+          src="/figures/figS1_metal_stratification.png"
           alt="Fig S1 — metal-type-stratified ROC strip"
           label="Fig S1 · Metal-type-stratified ROC"
-          description="ROC curves stratified by metal type (Fe / Zn / Ca / Mg / Mn) across ESM2-3state, LMetalSite, GPSite."
+          description="ROC curves on the shared-metals (Zn / Ca / Mg / Mn) and iron-only strata across ESM2-3state, LMetalSite, GPSite."
           className="w-full"
         />
 

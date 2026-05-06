@@ -21,7 +21,7 @@ metal-binding, grey free thiol).
 | `fig2d_metal_roc.png` | Paper Fig 2D | `/benchmark` |
 | `fig2e_metal_pr.png` | Paper Fig 2E | `/benchmark` |
 | `fig2f_metal_threshold.png` | Paper Fig 2F | `/benchmark` |
-| `figS1_iron_only_roc.png` | Paper Fig S1 | `/benchmark` |
+| `figS1_metal_stratification.png` | Paper Fig S1 | `/benchmark` |
 | `fig4a_af_geom_overview.png` | Paper Fig 4A | `/af-geometric` (step 5) |
 | `fig4b_af_geom_distance.png` | Paper Fig 4B | `/af-geometric` |
 | `fig4c_af_geom_pae.png` | Paper Fig 4C | `/af-geometric` |

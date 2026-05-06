@@ -129,9 +129,9 @@ export const FIGURE_DATA: DownloadEntry[] = [
   },
   {
     id: 'figS1',
-    filename: 'figS1_iron_only_roc.csv',
-    path: '/data/figure_data/figS1_iron_only_roc.csv',
-    description: 'Metal-type-stratified ROC; iron-only is the manuscript headline finding.',
+    filename: 'figS1_metal_stratification.csv',
+    path: '/data/figure_data/figS1_metal_stratification.csv',
+    description: 'Metal-type-stratified ROC: shared-metals (Zn / Ca / Mg / Mn) and iron-only strata across ESM2-3state, LMetalSite, GPSite.',
     format: 'CSV',
     paperFigure: 'Fig S1',
   },
