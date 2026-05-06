@@ -223,7 +223,7 @@ export async function getMetalConcordance(includeCofactors: boolean): Promise<Co
     ),
     metal_pred AS (
       SELECT DISTINCT ep.domain_id
-      FROM cys_classification.esm2_predictions ep
+      FROM cys_classification.esm2_predictions_held_out_v1 ep
       JOIN pdb_f70 ON ep.domain_id = pdb_f70.domain_id
       WHERE ep.met_prob > ep.dis_prob AND ep.met_prob > ep.neg_prob
     ),
@@ -373,7 +373,7 @@ export async function getExpansionStats(): Promise<ExpansionStats> {
       queryOne<{ count: string }>(
         `WITH ${F70_REP_CTE}
         SELECT count(DISTINCT f70.${level})::text AS count
-        FROM cys_classification.esm2_predictions ep
+        FROM cys_classification.esm2_predictions_held_out_v1 ep
         JOIN f70 ON ep.domain_id = f70.domain_id
         WHERE ep.dis_prob > ep.neg_prob AND ep.dis_prob > ep.met_prob`
       )
@@ -393,7 +393,7 @@ export async function getExpansionStats(): Promise<ExpansionStats> {
       queryOne<{ count: string }>(
         `WITH ${F70_REP_CTE}
         SELECT count(DISTINCT f70.${level})::text AS count
-        FROM cys_classification.esm2_predictions ep
+        FROM cys_classification.esm2_predictions_held_out_v1 ep
         JOIN f70 ON ep.domain_id = f70.domain_id
         WHERE ep.met_prob > ep.dis_prob AND ep.met_prob > ep.neg_prob`
       )
@@ -439,7 +439,7 @@ export async function getPdbVsAfdbRates(): Promise<PdbVsAfdbRow[]> {
     ),
     metal_domains AS (
       SELECT DISTINCT domain_id
-      FROM cys_classification.esm2_predictions
+      FROM cys_classification.esm2_predictions_held_out_v1
       WHERE met_prob > dis_prob AND met_prob > neg_prob
     ),
     grouped AS (

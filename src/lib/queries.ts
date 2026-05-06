@@ -78,13 +78,13 @@ export async function getMethodStats(): Promise<MethodStat[]> {
   let rows: { method: string; records: string; domains: string }[] = [];
   try {
     rows = await query<{ method: string; records: string; domains: string }>(`
-      SELECT 'ESM2 3-state' as method, count(*)::text as records, count(DISTINCT domain_id)::text as domains FROM cys_classification.esm2_predictions
+      SELECT 'ESM2 3-state' as method, count(*)::text as records, count(DISTINCT domain_id)::text as domains FROM cys_classification.esm2_predictions_held_out_v1
       UNION ALL SELECT 'Geometric SS', count(*)::text, count(DISTINCT domain_id)::text FROM cys_classification.geometric_disulfides
       UNION ALL SELECT 'PDB SSBOND', count(*)::text, count(DISTINCT domain_id)::text FROM cys_classification.pdb_ssbonds
       UNION ALL SELECT 'PDB Metal LINK', count(*)::text, count(DISTINCT domain_id)::text FROM cys_classification.pdb_metal_links
     `);
   } catch {
-    // esm2_predictions table may not exist yet — fall back without it
+    // esm2_predictions_held_out_v1 may not exist yet — fall back without it
     rows = await query<{ method: string; records: string; domains: string }>(`
       SELECT 'Geometric SS' as method, count(*)::text as records, count(DISTINCT domain_id)::text as domains FROM cys_classification.geometric_disulfides
       UNION ALL SELECT 'PDB SSBOND', count(*)::text, count(DISTINCT domain_id)::text FROM cys_classification.pdb_ssbonds
@@ -1040,9 +1040,9 @@ export async function getDomainClassifications(domainDbId: number): Promise<Cyst
 export async function getDomainEvidence(domainDbId: number): Promise<DomainEvidence> {
   // Per-class probabilities are taken from cysteine_classifications.evidence,
   // which carries them as a single string ('esm2_neg:X;esm2_dis:Y;esm2_met:Z'
-  // or 'no_esm2'). The separate cys_classification.esm2_predictions table
-  // is a different / earlier inference run whose probabilities don't
-  // match the published classifications — using it produces sub-threshold
+  // or 'no_esm2'). cys_classification.esm2_predictions_held_out_v1 is a
+  // different / earlier inference run whose probabilities don't match
+  // the published classifications — using it produces sub-threshold
   // probabilities under METAL_BINDING / DISULFIDE badges, which the
   // domain page used to render. Parsing the evidence string keeps the
   // displayed probabilities self-consistent with the classification.

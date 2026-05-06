@@ -177,27 +177,31 @@ LEFT JOIN LATERAL (
    WHERE run_id = r.id
 ) c ON TRUE;
 
--- ---------- §3.1 esm2_predictions: conditionally required ----------
+-- ---------- §3.1 esm2_predictions_held_out_v1: held-out v1 inference ----------
+-- Authoritative per-cysteine probabilities live in
+-- cysteine_classifications.evidence; this table is the older held-out
+-- v1 inference whose values disagree with the published classifications.
+-- Kept around for argmax-based coverage analysis (analysisQueries.ts).
 INSERT INTO verify_results
-SELECT 'table:cys_classification.esm2_predictions',
+SELECT 'table:cys_classification.esm2_predictions_held_out_v1',
        CASE WHEN EXISTS (
          SELECT 1 FROM information_schema.tables
-         WHERE table_schema = 'cys_classification' AND table_name = 'esm2_predictions'
+         WHERE table_schema = 'cys_classification' AND table_name = 'esm2_predictions_held_out_v1'
        ) THEN 'PASS' ELSE 'MISSING' END,
-       'per-cysteine TSV requires this table for p_neg/p_dis/p_met columns';
+       'held-out v1 ESM2 inference; not cited from the domain detail page';
 
 -- Probability sum sanity (only when the table exists).
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables
-             WHERE table_schema = 'cys_classification' AND table_name = 'esm2_predictions') THEN
+             WHERE table_schema = 'cys_classification' AND table_name = 'esm2_predictions_held_out_v1') THEN
     INSERT INTO verify_results
-    SELECT 'data:esm2_predictions-sum-to-one',
+    SELECT 'data:esm2_predictions_held_out_v1-sum-to-one',
            CASE WHEN bad = 0 THEN 'PASS' ELSE 'FAIL' END,
            bad || ' row(s) where neg+dis+met deviates from 1.0 by > 0.01'
     FROM (
       SELECT count(*) AS bad
-      FROM cys_classification.esm2_predictions
+      FROM cys_classification.esm2_predictions_held_out_v1
       WHERE abs(neg_prob + dis_prob + met_prob - 1.0) > 0.01
     ) q;
   END IF;
