@@ -11,12 +11,17 @@ import {
   type BenchmarkRow,
 } from '@/lib/paperData';
 
+const PAGE_TITLE = 'Benchmark';
+const PAGE_DESCRIPTION =
+  'Held-out benchmarking of ESM2-3state cysteine classification against ' +
+  'SSBONDPredict, LMetalSite, and GPSite, including metal-type-stratified ' +
+  'AUROC and the iron-only finding from paper Fig S1.';
+
 export const metadata: Metadata = {
-  title: 'Benchmark',
-  description:
-    'Held-out benchmarking of ESM2-3state cysteine classification against ' +
-    'SSBONDPredict, LMetalSite, and GPSite, including metal-type-stratified ' +
-    'AUROC and the iron-only finding from paper Fig S1.',
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  openGraph: { title: `${PAGE_TITLE} | TriCyp`, description: PAGE_DESCRIPTION },
+  twitter: { title: `${PAGE_TITLE} | TriCyp`, description: PAGE_DESCRIPTION },
 };
 
 const STRATUM_LABEL: Record<string, string> = {

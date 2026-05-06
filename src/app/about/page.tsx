@@ -10,12 +10,17 @@ import {
   buildRIS,
 } from '@/lib/paperData';
 
+const PAGE_TITLE = 'About / Methods';
+const PAGE_DESCRIPTION =
+  'Methods overview for TriCyp: pipeline, training data, ESM2-3state ' +
+  'model architecture, threshold selection, benchmarking, and software / ' +
+  'data availability.';
+
 export const metadata: Metadata = {
-  title: 'About / Methods',
-  description:
-    'Methods overview for TriCyp: pipeline, training data, ESM2-3state ' +
-    'model architecture, threshold selection, benchmarking, and software / ' +
-    'data availability.',
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  openGraph: { title: `${PAGE_TITLE} | TriCyp`, description: PAGE_DESCRIPTION },
+  twitter: { title: `${PAGE_TITLE} | TriCyp`, description: PAGE_DESCRIPTION },
 };
 
 const SECTIONS = [

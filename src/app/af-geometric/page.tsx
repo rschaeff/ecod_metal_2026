@@ -7,12 +7,17 @@ import {
   FIG_4_STRUCTURES,
 } from '@/lib/paperData';
 
+const PAGE_TITLE = 'AlphaFold geometric scanning';
+const PAGE_DESCRIPTION =
+  'Why AlphaFold-monomer geometric scanning is fundamentally limited as a ' +
+  'disulfide annotation source — paper Fig 4 panels A–F with downloadable ' +
+  'PyMOL sessions and matched PDB / AFDB structures.';
+
 export const metadata: Metadata = {
-  title: 'AlphaFold geometric scanning',
-  description:
-    'Why AlphaFold-monomer geometric scanning is fundamentally limited as a ' +
-    'disulfide annotation source — paper Fig 4 panels A–F with downloadable ' +
-    'PyMOL sessions and matched PDB / AFDB structures.',
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  openGraph: { title: `${PAGE_TITLE} | TriCyp`, description: PAGE_DESCRIPTION },
+  twitter: { title: `${PAGE_TITLE} | TriCyp`, description: PAGE_DESCRIPTION },
 };
 
 interface StructureExample {

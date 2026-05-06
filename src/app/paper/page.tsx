@@ -8,11 +8,16 @@ import {
 } from '@/lib/paperData';
 import CopyButton from '@/components/ui/CopyButton';
 
+const PAGE_TITLE = 'Paper';
+const PAGE_DESCRIPTION =
+  'Figure-by-figure index of the manuscript with direct links to the ' +
+  'corresponding TriCyp surfaces. Includes BibTeX and RIS citation blocks.';
+
 export const metadata: Metadata = {
-  title: 'Paper',
-  description:
-    'Figure-by-figure index of the manuscript with direct links to the ' +
-    'corresponding TriCyp surfaces. Includes BibTeX and RIS citation blocks.',
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  openGraph: { title: `${PAGE_TITLE} | TriCyp`, description: PAGE_DESCRIPTION },
+  twitter: { title: `${PAGE_TITLE} | TriCyp`, description: PAGE_DESCRIPTION },
 };
 
 export default function PaperPage() {

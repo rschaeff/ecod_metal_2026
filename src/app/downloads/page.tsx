@@ -12,11 +12,16 @@ import { RATE_LIMIT_CONFIG } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
+const PAGE_TITLE = 'Downloads & API';
+const PAGE_DESCRIPTION =
+  'Bulk data, figure-data CSVs, predictor source, model weights, and the ' +
+  'public read-only REST API for the TriCyp deposition.';
+
 export const metadata: Metadata = {
-  title: 'Downloads & API',
-  description:
-    'Bulk data, figure-data CSVs, predictor source, model weights, and the ' +
-    'public read-only REST API for the TriCyp deposition.',
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  openGraph: { title: `${PAGE_TITLE} | TriCyp`, description: PAGE_DESCRIPTION },
+  twitter: { title: `${PAGE_TITLE} | TriCyp`, description: PAGE_DESCRIPTION },
 };
 
 interface FileStatus {

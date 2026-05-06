@@ -8,12 +8,17 @@ import HGroupConfusionMatrix from './HGroupConfusionMatrix';
 
 export const dynamic = 'force-dynamic';
 
+const PAGE_TITLE = 'H-group browser';
+const PAGE_DESCRIPTION =
+  'Browse ECOD H-groups by structurally-known vs ESM2-predicted cysteine ' +
+  'fractions. Mirrors paper Fig 5A,B confusion matrices for disulfide and ' +
+  'metal-binding tasks.';
+
 export const metadata: Metadata = {
-  title: 'H-group browser',
-  description:
-    'Browse ECOD H-groups by structurally-known vs ESM2-predicted cysteine ' +
-    'fractions. Mirrors paper Fig 5A,B confusion matrices for disulfide and ' +
-    'metal-binding tasks.',
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  openGraph: { title: `${PAGE_TITLE} | TriCyp`, description: PAGE_DESCRIPTION },
+  twitter: { title: `${PAGE_TITLE} | TriCyp`, description: PAGE_DESCRIPTION },
 };
 
 export default async function HGroupBrowserPage() {
