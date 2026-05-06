@@ -12,16 +12,19 @@ interface Fig3BPanelProps {
 
 const KINGDOMS = ['Eukaryota', 'Bacteria', 'Archaea'] as const;
 
+// Restrict the denominator to the three cellular superkingdoms so live
+// percentages match the paper convention (Viruses are excluded from Fig 3B).
 function liveFractions(taxonomy: SuperkingdomBreakdown[]): KingdomFractionRow[] | null {
-  const totalDomains = taxonomy.reduce((s, t) => s + t.nDomains, 0);
-  const totalCys = taxonomy.reduce(
+  const cellular = taxonomy.filter((t) => (KINGDOMS as readonly string[]).includes(t.superkingdom));
+  const totalDomains = cellular.reduce((s, t) => s + t.nDomains, 0);
+  const totalCys = cellular.reduce(
     (s, t) => s + t.nDisulfide + t.nMetal + t.nUnclassified,
     0,
   );
   if (totalDomains === 0 || totalCys === 0) return null;
 
   return KINGDOMS.map((k) => {
-    const row = taxonomy.find((t) => t.superkingdom === k);
+    const row = cellular.find((t) => t.superkingdom === k);
     if (!row) return { kingdom: k, domainPct: 0, cysteinePct: 0 };
     const cys = row.nDisulfide + row.nMetal + row.nUnclassified;
     return {
@@ -61,6 +64,7 @@ export default function Fig3BPanel({ taxonomy }: Fig3BPanelProps) {
       csvFilename="fig3b_kingdom_fractions.csv"
       csvRows={csvRows}
       anchor="fig3b"
+      dataSource={dataSource}
     >
       <ResponsiveContainer width="100%" height={260}>
         <BarChart

@@ -59,10 +59,13 @@ export const FIG_3B: KingdomFractionRow[] = [
   { kingdom: 'Archaea',   domainPct: 16.6, cysteinePct: 11.0 },
 ];
 
+// Caption is intentionally number-free — Fig3BPanel renders live percentages
+// directly on the bars, so spelling them in prose risks drift between live
+// and paper-snapshot rows.
 export const FIG_3B_CAPTION =
-  'Eukaryotic domains contribute disproportionately to total cysteine count: ' +
-  '55% of classified domains hold 74% of classified cysteines. Bacterial and ' +
-  'archaeal domains are cysteine-poor by comparison.';
+  'Eukaryotic domains contribute disproportionately to total cysteine count. ' +
+  'Bacterial and archaeal domains are cysteine-poor by comparison; the gap ' +
+  'between domain fraction and cysteine fraction is the headline of this panel.';
 
 export const FIG_3C_CAPTION =
   'Per-kingdom three-state classification rates. Eukaryotic cysteines are ' +

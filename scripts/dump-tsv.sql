@@ -5,22 +5,27 @@
 -- The wrapper sets the OUT_DIR env var, runs psql with this file, and emits
 -- SHA-256 sidecars next to each output. Cron-runnable.
 --
--- Output files (written to :outdir):
---   cysteine-classifications.tsv
---   domain-summary.tsv
---   hgroup-aggregates.tsv
+-- Output files (written via `\o :<var>` + server-side COPY TO STDOUT —
+-- this avoids the single-line restriction on the psql `\copy` meta-command.
+-- Use unquoted `:<var>` for `\o` since psql passes quoted forms verbatim
+-- to the file-open call):
+--   :cys_out  → cysteine-classifications.tsv
+--   :dom_out  → domain-summary.tsv
+--   :hgr_out  → hgroup-aggregates.tsv
 
+\set ON_ERROR_STOP on
 \timing on
 
 \echo 'Generating cysteine-classifications.tsv ...'
-\copy (
+\o :cys_out
+COPY (
   SELECT
     d.domain_id,
     cc.cys_position,
     cc.classification,
-    COALESCE(esm.neg_prob, NULL) AS p_neg,
-    COALESCE(esm.dis_prob, NULL) AS p_dis,
-    COALESCE(esm.met_prob, NULL) AS p_met,
+    esm.neg_prob AS p_neg,
+    esm.dis_prob AS p_dis,
+    esm.met_prob AS p_met,
     cc.evidence AS evidence_tags,
     fa.f_group_id,
     fa.h_group_id,
@@ -38,10 +43,12 @@
   WHERE cr.parameter_set_id = 2
     AND dc.is_representative = TRUE
   ORDER BY d.domain_id, cc.cys_position
-) TO :'cys_out' WITH (FORMAT csv, DELIMITER E'\t', HEADER true);
+) TO STDOUT WITH (FORMAT csv, DELIMITER E'\t', HEADER true);
+\o
 
 \echo 'Generating domain-summary.tsv ...'
-\copy (
+\o :dom_out
+COPY (
   SELECT
     d.domain_id,
     p.source_type,
@@ -63,57 +70,39 @@
   WHERE cr.parameter_set_id = 2
     AND dc.is_representative = TRUE
   ORDER BY d.domain_id
-) TO :'dom_out' WITH (FORMAT csv, DELIMITER E'\t', HEADER true);
+) TO STDOUT WITH (FORMAT csv, DELIMITER E'\t', HEADER true);
+\o
 
 \echo 'Generating hgroup-aggregates.tsv ...'
--- Mirrors getHGroupSummary() in src/lib/queries.ts. Once the materialized view
--- cys_classification.hgroup_summary lands (TRICYP_SPEC §"Database changes"),
--- this block can be replaced with a single SELECT * FROM hgroup_summary.
-\copy (
+-- Reads the materialized view created by scripts/migrations/001_hgroup_summary.sql.
+-- Derived percentage columns are computed here so the TSV download matches the
+-- legacy "pdb_disulfide_pct / afdb_metal_pct" schema cited in the manuscript's
+-- "Software and data availability" section.
+\o :hgr_out
+COPY (
   SELECT
-    fa.h_group_id,
-    COALESCE(hc.name, fa.h_group_id) AS h_group_name,
-    fa.x_group_id,
-    count(DISTINCT d.id) FILTER (WHERE p.source_type = 'pdb')   AS n_pdb_reps,
-    count(DISTINCT d.id) FILTER (WHERE p.source_type <> 'pdb')  AS n_afdb_reps,
-    COALESCE(sum(ds.total_cys)       FILTER (WHERE p.source_type = 'pdb'), 0)  AS pdb_total_cys,
-    COALESCE(sum(ds.total_cys)       FILTER (WHERE p.source_type <> 'pdb'), 0) AS afdb_total_cys,
-    CASE
-      WHEN sum(ds.total_cys) FILTER (WHERE p.source_type = 'pdb') > 0
-      THEN round(100.0 * sum(ds.n_disulfide) FILTER (WHERE p.source_type = 'pdb')::numeric
-                       / sum(ds.total_cys)   FILTER (WHERE p.source_type = 'pdb'), 2)
-      ELSE NULL
+    h_group_id,
+    h_group_name,
+    x_group_id,
+    n_pdb_reps,
+    n_afdb_reps,
+    pdb_total_cys,
+    afdb_total_cys,
+    CASE WHEN pdb_total_cys > 0
+         THEN round(100.0 * pdb_n_disulfide::numeric  / pdb_total_cys,  2)
     END AS pdb_disulfide_pct,
-    CASE
-      WHEN sum(ds.total_cys) FILTER (WHERE p.source_type = 'pdb') > 0
-      THEN round(100.0 * sum(ds.n_metal_binding) FILTER (WHERE p.source_type = 'pdb')::numeric
-                       / sum(ds.total_cys)       FILTER (WHERE p.source_type = 'pdb'), 2)
-      ELSE NULL
+    CASE WHEN pdb_total_cys > 0
+         THEN round(100.0 * pdb_n_metal::numeric      / pdb_total_cys,  2)
     END AS pdb_metal_pct,
-    CASE
-      WHEN sum(ds.total_cys) FILTER (WHERE p.source_type <> 'pdb') > 0
-      THEN round(100.0 * sum(ds.n_disulfide) FILTER (WHERE p.source_type <> 'pdb')::numeric
-                       / sum(ds.total_cys)   FILTER (WHERE p.source_type <> 'pdb'), 2)
-      ELSE NULL
+    CASE WHEN afdb_total_cys > 0
+         THEN round(100.0 * afdb_n_disulfide::numeric / afdb_total_cys, 2)
     END AS afdb_disulfide_pct,
-    CASE
-      WHEN sum(ds.total_cys) FILTER (WHERE p.source_type <> 'pdb') > 0
-      THEN round(100.0 * sum(ds.n_metal_binding) FILTER (WHERE p.source_type <> 'pdb')::numeric
-                       / sum(ds.total_cys)       FILTER (WHERE p.source_type <> 'pdb'), 2)
-      ELSE NULL
+    CASE WHEN afdb_total_cys > 0
+         THEN round(100.0 * afdb_n_metal::numeric     / afdb_total_cys, 2)
     END AS afdb_metal_pct
-  FROM cys_classification.domain_summary ds
-  JOIN ecod_commons.domains d              ON ds.domain_id = d.id
-  JOIN ecod_commons.proteins p             ON d.protein_id = p.id
-  JOIN ecod_commons.f_group_assignments fa ON ds.domain_id = fa.domain_id
-  JOIN ecod_commons.domain_clusters dc     ON d.id = dc.domain_id
-  JOIN ecod_commons.clustering_runs cr     ON dc.clustering_run_id = cr.id
-  LEFT JOIN ecod_rep.cluster hc            ON fa.h_group_id = hc.id::text AND hc.type = 'H'
-  WHERE cr.parameter_set_id = 2
-    AND dc.is_representative = TRUE
-  GROUP BY fa.h_group_id, hc.name, fa.x_group_id
-  HAVING count(DISTINCT d.id) >= 1
-  ORDER BY fa.h_group_id
-) TO :'hgr_out' WITH (FORMAT csv, DELIMITER E'\t', HEADER true);
+  FROM cys_classification.hgroup_summary
+  ORDER BY h_group_id
+) TO STDOUT WITH (FORMAT csv, DELIMITER E'\t', HEADER true);
+\o
 
 \echo 'Done.'
