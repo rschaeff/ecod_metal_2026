@@ -111,10 +111,173 @@ export const PAPER_REF = {
   authors: 'Yuan, Durham, Cong, Schaeffer',
   title:
     'Classification of cysteine fates in structure predictions using a protein language model',
+  year: 2026,
   // Placeholder — replace with bioRxiv DOI once preprint is posted.
   doi: null as string | null,
   bioRxivUrl: null as string | null,
 };
+
+// Figure → TriCyp surface map for the /paper page. Mirrors the
+// "Paper-figure correspondence" table at the top of TRICYP_SPEC.md.
+export interface FigureSurfaceEntry {
+  figure: string;        // "Fig 1" | "Fig 3A" | "Fig S1" …
+  shortTitle: string;
+  description: string;
+  href: string;          // page or page#anchor
+  surfaceLabel: string;  // human-readable surface name
+  isMain: boolean;       // true for main figures, false for supplementary
+}
+
+export const FIGURE_TO_SURFACE: FigureSurfaceEntry[] = [
+  {
+    figure: 'Fig 1',
+    shortTitle: 'Pipeline overview',
+    description: 'Pipeline diagram for ESM2-3state classification across ECOD F70 representative domains.',
+    href: '/about',
+    surfaceLabel: 'About / Methods',
+    isMain: true,
+  },
+  {
+    figure: 'Fig 2',
+    shortTitle: 'Held-out benchmark',
+    description: 'ROC + PR curves and threshold tuning for ESM2-3state vs SSBONDPredict (disulfide) and vs LMetalSite / GPSite (metal-binding).',
+    href: '/benchmark',
+    surfaceLabel: 'Benchmark',
+    isMain: true,
+  },
+  {
+    figure: 'Fig 3A',
+    shortTitle: 'Source-stratified rates',
+    description: 'Stacked bars: PDB-geom / PDB-ESM / AFDB-ESM × free-thiol / disulfide / metal-binding fractions.',
+    href: '/#fig3a',
+    surfaceLabel: 'Dashboard',
+    isMain: true,
+  },
+  {
+    figure: 'Fig 3B',
+    shortTitle: 'Kingdom representation',
+    description: 'Domain fraction vs cysteine fraction by superkingdom.',
+    href: '/#fig3b',
+    surfaceLabel: 'Dashboard',
+    isMain: true,
+  },
+  {
+    figure: 'Fig 3C',
+    shortTitle: 'Per-kingdom rates',
+    description: 'Stacked classification rates for Bacteria / Archaea / Eukaryota.',
+    href: '/#fig3c',
+    surfaceLabel: 'Dashboard',
+    isMain: true,
+  },
+  {
+    figure: 'Fig 3D',
+    shortTitle: 'Subcellular gradient',
+    description: 'Eukaryotic subcellular localisation: disulfide and metal-binding rates per compartment.',
+    href: '/#fig3d',
+    surfaceLabel: 'Dashboard',
+    isMain: true,
+  },
+  {
+    figure: 'Fig 4',
+    shortTitle: 'AF geometric scanning',
+    description: 'Why AlphaFold-monomer geometric scanning is fundamentally limited as a disulfide annotation source — panels A–F with downloadable PyMOL sessions.',
+    href: '/af-geometric',
+    surfaceLabel: 'AlphaFold geometric scanning',
+    isMain: true,
+  },
+  {
+    figure: 'Fig 5A,B',
+    shortTitle: 'H-group confusion matrix',
+    description: 'Structurally-known × ESM2-predicted cysteine fractions per H-group; click-through to the H-groups in any cell.',
+    href: '/h-group',
+    surfaceLabel: 'H-group browser',
+    isMain: true,
+  },
+  {
+    figure: 'Fig 5C',
+    shortTitle: 'Novel metal H-group · 3380.1',
+    description: 'Side-by-side PDB-source and AFDB-source representatives with ESM2-predicted metal-binding cysteines highlighted.',
+    href: '/h-group/3380.1',
+    surfaceLabel: 'H-group 3380.1',
+    isMain: true,
+  },
+  {
+    figure: 'Fig 5D',
+    shortTitle: 'Novel metal H-group · 804.1',
+    description: 'Second highlighted candidate-novel metal-binding H-group.',
+    href: '/h-group/804.1',
+    surfaceLabel: 'H-group 804.1',
+    isMain: true,
+  },
+  {
+    figure: 'Fig 5E',
+    shortTitle: 'Novel metal H-group · 3991.1',
+    description: 'Third highlighted candidate-novel metal-binding H-group.',
+    href: '/h-group/3991.1',
+    surfaceLabel: 'H-group 3991.1',
+    isMain: true,
+  },
+  {
+    figure: 'Fig S1',
+    shortTitle: 'Iron-only ROC',
+    description: 'Metal-type-stratified ROC. The headline iron-only finding (ESM2 0.993 / LMetalSite 0.917 / GPSite 0.877).',
+    href: '/benchmark#figS1',
+    surfaceLabel: 'Benchmark',
+    isMain: false,
+  },
+  {
+    figure: 'Fig S2',
+    shortTitle: 'Source-type breakdown',
+    description: 'Source-type breakdown (PDB / AFDB / Prodigal / UniParc) × classification fractions.',
+    href: '/#figS2',
+    surfaceLabel: 'Dashboard',
+    isMain: false,
+  },
+  {
+    figure: 'Fig S3',
+    shortTitle: 'Confidence distribution',
+    description: 'Distribution of max-class probability across all classified cysteines.',
+    href: '/#figS3',
+    surfaceLabel: 'Dashboard',
+    isMain: false,
+  },
+];
+
+// Citation templates. The bioRxiv DOI / URL are filled in from PAPER_REF
+// when available; until then the templates render with explicit placeholders
+// so a downstream user does not accidentally cite an unresolved DOI.
+export function buildBibTeX(): string {
+  const doiLine = PAPER_REF.doi ? `  doi = {${PAPER_REF.doi}},\n` : '';
+  const urlLine = PAPER_REF.bioRxivUrl ? `  url = {${PAPER_REF.bioRxivUrl}},\n` : '';
+  return [
+    '@article{yuan_tricyp_' + PAPER_REF.year + ',',
+    '  title = {' + PAPER_REF.title + '},',
+    '  author = {Yuan and Durham and Cong and Schaeffer},',
+    '  year = {' + PAPER_REF.year + '},',
+    '  journal = {bioRxiv},',
+    doiLine.replace(/\n$/, ''),
+    urlLine.replace(/\n$/, ''),
+    '  note = {TriCyp companion site: https://tricyp.swmed.edu},',
+    '}',
+  ].filter(Boolean).join('\n');
+}
+
+export function buildRIS(): string {
+  const lines = [
+    'TY  - JOUR',
+    `TI  - ${PAPER_REF.title}`,
+    'AU  - Yuan',
+    'AU  - Durham',
+    'AU  - Cong',
+    'AU  - Schaeffer, Dustin',
+    `PY  - ${PAPER_REF.year}`,
+    'JO  - bioRxiv',
+  ];
+  if (PAPER_REF.doi) lines.push(`DO  - ${PAPER_REF.doi}`);
+  if (PAPER_REF.bioRxivUrl) lines.push(`UR  - ${PAPER_REF.bioRxivUrl}`);
+  lines.push('ER  - ');
+  return lines.join('\n');
+}
 
 export const FIG_S2_CAPTION =
   'Source-type breakdown across F70 representative domains. PDB-source domains ' +

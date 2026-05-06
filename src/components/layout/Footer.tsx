@@ -33,6 +33,21 @@ export default function Footer() {
                   Browse Families
                 </Link>
               </li>
+              <li>
+                <Link href="/downloads" className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400">
+                  Downloads &amp; API
+                </Link>
+              </li>
+              <li>
+                <Link href="/about" className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400">
+                  About / Methods
+                </Link>
+              </li>
+              <li>
+                <Link href="/paper" className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400">
+                  Paper
+                </Link>
+              </li>
             </ul>
           </div>
 

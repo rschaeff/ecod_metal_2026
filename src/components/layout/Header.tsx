@@ -11,6 +11,9 @@ const navLinks = [
   { href: '/af-geometric', label: 'AF Geometric' },
   { href: '/h-group', label: 'H-Groups' },
   { href: '/family', label: 'Browse Families' },
+  { href: '/downloads', label: 'Downloads' },
+  { href: '/about', label: 'About' },
+  { href: '/paper', label: 'Paper' },
 ];
 
 export default function Header() {
