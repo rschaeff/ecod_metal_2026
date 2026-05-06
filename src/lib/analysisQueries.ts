@@ -222,10 +222,12 @@ export async function getMetalConcordance(includeCofactors: boolean): Promise<Co
       WHERE ml.coord_resname = 'CYS' ${cofactorFilter}
     ),
     metal_pred AS (
-      SELECT DISTINCT ep.domain_id
-      FROM cys_classification.esm2_predictions_held_out_v1 ep
-      JOIN pdb_f70 ON ep.domain_id = pdb_f70.domain_id
-      WHERE ep.met_prob > ep.dis_prob AND ep.met_prob > ep.neg_prob
+      -- Published thresholded metal-binding calls (matches the
+      -- /domain badge and the BENCHMARK_THRESHOLDS.metalBinding rule).
+      SELECT DISTINCT cc.domain_id
+      FROM cys_classification.cysteine_classifications cc
+      JOIN pdb_f70 ON cc.domain_id = pdb_f70.domain_id
+      WHERE cc.classification = 'METAL_BINDING'
     ),
     per_domain AS (
       SELECT pdb_f70.domain_id,
@@ -368,14 +370,14 @@ export async function getExpansionStats(): Promise<ExpansionStats> {
         WHERE s.both_in_domain = TRUE`
       )
     );
-    // disulfide predicted (ESM2: dis_prob is argmax)
+    // disulfide predicted — published thresholded calls.
     queries.push(
       queryOne<{ count: string }>(
         `WITH ${F70_REP_CTE}
         SELECT count(DISTINCT f70.${level})::text AS count
-        FROM cys_classification.esm2_predictions_held_out_v1 ep
-        JOIN f70 ON ep.domain_id = f70.domain_id
-        WHERE ep.dis_prob > ep.neg_prob AND ep.dis_prob > ep.met_prob`
+        FROM cys_classification.cysteine_classifications cc
+        JOIN f70 ON cc.domain_id = f70.domain_id
+        WHERE cc.classification = 'DISULFIDE'`
       )
     );
     // metal truth
@@ -388,14 +390,14 @@ export async function getExpansionStats(): Promise<ExpansionStats> {
         WHERE ml.coord_resname = 'CYS' AND ml.cofactor IS NULL`
       )
     );
-    // metal predicted (ESM2: met_prob is argmax)
+    // metal predicted — published thresholded calls.
     queries.push(
       queryOne<{ count: string }>(
         `WITH ${F70_REP_CTE}
         SELECT count(DISTINCT f70.${level})::text AS count
-        FROM cys_classification.esm2_predictions_held_out_v1 ep
-        JOIN f70 ON ep.domain_id = f70.domain_id
-        WHERE ep.met_prob > ep.dis_prob AND ep.met_prob > ep.neg_prob`
+        FROM cys_classification.cysteine_classifications cc
+        JOIN f70 ON cc.domain_id = f70.domain_id
+        WHERE cc.classification = 'METAL_BINDING'`
       )
     );
   }
@@ -438,9 +440,10 @@ export async function getPdbVsAfdbRates(): Promise<PdbVsAfdbRow[]> {
       JOIN ecod_commons.proteins p ON d.protein_id = p.id
     ),
     metal_domains AS (
+      -- Published thresholded metal-binding calls.
       SELECT DISTINCT domain_id
-      FROM cys_classification.esm2_predictions_held_out_v1
-      WHERE met_prob > dis_prob AND met_prob > neg_prob
+      FROM cys_classification.cysteine_classifications
+      WHERE classification = 'METAL_BINDING'
     ),
     grouped AS (
       SELECT ds.t_group_id,
