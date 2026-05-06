@@ -106,6 +106,12 @@ export const PAPER_TOTALS = {
   freeThiol: 2_084_224,
 } as const;
 
+// Data-version pin. Per TRICYP_SPEC "Open questions": the public site
+// tracks the paper-publication snapshot as v1. Bump this string when the
+// underlying data refresh is intentional and breaks compatibility with prior
+// downloads; users cite the stamped version when they reference TriCyp.
+export const DATA_VERSION = 'paper-v1' as const;
+
 // Paper reference. Update when the bioRxiv preprint URL is assigned.
 export const PAPER_REF = {
   authors: 'Yuan, Durham, Cong, Schaeffer',

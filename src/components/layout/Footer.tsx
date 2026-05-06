@@ -1,7 +1,24 @@
 import Link from 'next/link';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import { DATA_VERSION } from '@/lib/paperData';
 
-export default function Footer() {
+async function getDataRefreshedAt(): Promise<string | null> {
+  try {
+    const txt = await fs.readFile(
+      path.join(process.cwd(), 'public', 'data', '.generated-at'),
+      'utf8',
+    );
+    const d = new Date(txt.trim());
+    return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+  } catch {
+    return null;
+  }
+}
+
+export default async function Footer() {
   const currentYear = new Date().getFullYear();
+  const refreshedAt = await getDataRefreshedAt();
 
   return (
     <footer className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
@@ -72,9 +89,20 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+        <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-center sm:text-left">
             &copy; {currentYear} Schaeffer &amp; Cong Labs, UT Southwestern Medical Center
+          </p>
+          <p className="text-center sm:text-right font-mono text-xs">
+            <Link href="/about" className="hover:text-amber-600 dark:hover:text-amber-400" title="See About / Methods for the data version policy">
+              data · {DATA_VERSION}
+            </Link>
+            {refreshedAt && (
+              <>
+                <span className="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
+                <span>refreshed {refreshedAt}</span>
+              </>
+            )}
           </p>
         </div>
       </div>

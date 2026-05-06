@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 import type { SuperkingdomBreakdown } from '@/lib/queries';
 import { FIG_3B, FIG_3B_CAPTION, type KingdomFractionRow } from '@/lib/paperData';
@@ -32,6 +33,11 @@ function liveFractions(taxonomy: SuperkingdomBreakdown[]): KingdomFractionRow[] 
 }
 
 export default function Fig3BPanel({ taxonomy }: Fig3BPanelProps) {
+  const router = useRouter();
+  const drillDown = (kingdom: string) => {
+    router.push(`/family?kingdom=${encodeURIComponent(kingdom)}`);
+  };
+
   const live = liveFractions(taxonomy);
   const rows = live ?? FIG_3B;
   const dataSource = live ? 'live' : 'paper-snapshot';
@@ -57,7 +63,16 @@ export default function Fig3BPanel({ taxonomy }: Fig3BPanelProps) {
       anchor="fig3b"
     >
       <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={chartData} margin={{ top: 8, right: 24, bottom: 8, left: 0 }} barCategoryGap={32}>
+        <BarChart
+          data={chartData}
+          margin={{ top: 8, right: 24, bottom: 8, left: 0 }}
+          barCategoryGap={32}
+          onClick={(e) => {
+            const kingdom = (e?.activePayload?.[0]?.payload as { kingdom?: string } | undefined)?.kingdom;
+            if (kingdom) drillDown(kingdom);
+          }}
+          style={{ cursor: 'pointer' }}
+        >
           <XAxis dataKey="kingdom" />
           <YAxis tickFormatter={(v: number) => `${v}%`} domain={[0, 100]} />
           <Tooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
