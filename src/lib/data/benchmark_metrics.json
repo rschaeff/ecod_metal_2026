@@ -1,0 +1,190 @@
+{
+  "generated_at": "2026-05-06T20:54:34Z",
+  "source": "scripts/benchmark_web_panels.py over scripts/benchmark_roc.py",
+  "evaluation_set": {
+    "n_proteins_excluded": 6722,
+    "n_cysteines": 173241
+  },
+  "metrics": [
+    {
+      "tool": "ESM2-3state",
+      "task": "disulfide",
+      "stratum": "all",
+      "auroc": 0.9868,
+      "ap": 0.9664,
+      "n_pos": 33541,
+      "n_total": 173233
+    },
+    {
+      "tool": "SSBONDPredict",
+      "task": "disulfide",
+      "stratum": "all",
+      "auroc": 0.9707,
+      "ap": 0.8942,
+      "n_pos": 33541,
+      "n_total": 173241
+    },
+    {
+      "tool": "ESM2-3state",
+      "task": "metal_binding",
+      "stratum": "all",
+      "auroc": 0.9939,
+      "ap": 0.9432,
+      "n_pos": 10691,
+      "n_total": 173233
+    },
+    {
+      "tool": "LMetalSite",
+      "task": "metal_binding",
+      "stratum": "all",
+      "auroc": 0.9792,
+      "ap": 0.8918,
+      "n_pos": 10691,
+      "n_total": 173241
+    },
+    {
+      "tool": "GPSite",
+      "task": "metal_binding",
+      "stratum": "all",
+      "auroc": 0.9753,
+      "ap": 0.8806,
+      "n_pos": 10689,
+      "n_total": 173044
+    },
+    {
+      "tool": "ESM2-3state",
+      "task": "metal_binding",
+      "stratum": "shared_metals",
+      "auroc": 0.9957,
+      "ap": 0.9458,
+      "n_pos": 8623,
+      "n_total": 171165
+    },
+    {
+      "tool": "LMetalSite",
+      "task": "metal_binding",
+      "stratum": "shared_metals",
+      "auroc": 0.9942,
+      "ap": 0.9322,
+      "n_pos": 8623,
+      "n_total": 171173
+    },
+    {
+      "tool": "GPSite",
+      "task": "metal_binding",
+      "stratum": "shared_metals",
+      "auroc": 0.9962,
+      "ap": 0.944,
+      "n_pos": 8621,
+      "n_total": 170976
+    },
+    {
+      "tool": "ESM2-3state",
+      "task": "metal_binding",
+      "stratum": "iron_only",
+      "auroc": 0.9928,
+      "ap": 0.5939,
+      "n_pos": 1569,
+      "n_total": 164111
+    },
+    {
+      "tool": "LMetalSite",
+      "task": "metal_binding",
+      "stratum": "iron_only",
+      "auroc": 0.9172,
+      "ap": 0.2092,
+      "n_pos": 1569,
+      "n_total": 164119
+    },
+    {
+      "tool": "GPSite",
+      "task": "metal_binding",
+      "stratum": "iron_only",
+      "auroc": 0.8774,
+      "ap": 0.1141,
+      "n_pos": 1569,
+      "n_total": 163924
+    },
+    {
+      "tool": "ESM2-3state",
+      "task": "metal_binding",
+      "stratum": "iron_4fe4s",
+      "auroc": 0.9948,
+      "ap": 0.431,
+      "n_pos": 924,
+      "n_total": 163466
+    },
+    {
+      "tool": "LMetalSite",
+      "task": "metal_binding",
+      "stratum": "iron_4fe4s",
+      "auroc": 0.9195,
+      "ap": 0.1297,
+      "n_pos": 924,
+      "n_total": 163474
+    },
+    {
+      "tool": "GPSite",
+      "task": "metal_binding",
+      "stratum": "iron_4fe4s",
+      "auroc": 0.8709,
+      "ap": 0.053,
+      "n_pos": 924,
+      "n_total": 163279
+    },
+    {
+      "tool": "ESM2-3state",
+      "task": "metal_binding",
+      "stratum": "iron_heme",
+      "auroc": 0.9906,
+      "ap": 0.1525,
+      "n_pos": 136,
+      "n_total": 162678
+    },
+    {
+      "tool": "LMetalSite",
+      "task": "metal_binding",
+      "stratum": "iron_heme",
+      "auroc": 0.8375,
+      "ap": 0.0025,
+      "n_pos": 136,
+      "n_total": 162686
+    },
+    {
+      "tool": "GPSite",
+      "task": "metal_binding",
+      "stratum": "iron_heme",
+      "auroc": 0.7062,
+      "ap": 0.0014,
+      "n_pos": 136,
+      "n_total": 162491
+    },
+    {
+      "tool": "ESM2-3state",
+      "task": "metal_binding",
+      "stratum": "iron_2fe2s_3fe4s",
+      "auroc": 0.9922,
+      "ap": 0.3598,
+      "n_pos": 382,
+      "n_total": 162924
+    },
+    {
+      "tool": "LMetalSite",
+      "task": "metal_binding",
+      "stratum": "iron_2fe2s_3fe4s",
+      "auroc": 0.9204,
+      "ap": 0.1031,
+      "n_pos": 382,
+      "n_total": 162932
+    },
+    {
+      "tool": "GPSite",
+      "task": "metal_binding",
+      "stratum": "iron_2fe2s_3fe4s",
+      "auroc": 0.9257,
+      "ap": 0.0626,
+      "n_pos": 382,
+      "n_total": 162737
+    }
+  ]
+}

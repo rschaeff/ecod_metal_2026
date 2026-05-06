@@ -12,6 +12,11 @@ Reuses scripts/benchmark_roc.py as a module: data parsers, exclusion
 loading, and build_arrays. Produces six single-panel PNGs sized for the
 TriCyp /benchmark page plus a metal-stratified ROC strip for figS1.
 
+Also writes a benchmark_metrics.json next to the website's paperData.ts
+so BENCHMARK_TABLE / BENCHMARK_IRON_ONLY can derive from the same
+(tool, task, stratum) AUROC + AP values that go into the figure
+annotations.
+
 The website expects panels A-C = disulfide, D-F = metal (the manuscript's
 post-RC1 ordering). The internal benchmark_roc script uses the opposite
 order; this wrapper relabels accordingly.
@@ -51,7 +56,23 @@ import benchmark_roc as br  # noqa: E402
 DEFAULT_OUT = os.path.expanduser("~/dev/ecod_metal_2026/public/figures")
 OUT_DIR = os.environ.get("OUT_DIR", DEFAULT_OUT)
 
+DEFAULT_JSON_OUT = os.path.expanduser(
+    "~/dev/ecod_metal_2026/src/lib/data/benchmark_metrics.json"
+)
+JSON_OUT = os.environ.get("JSON_OUT", DEFAULT_JSON_OUT)
+
 METAL_TYPE_TSV = os.path.join(br.BASEDIR, "data/benchmark/met_metal_type_v2.tsv")
+
+# Tool-name canonicalisation: the script uses "ESM2 (held-out)" /
+# "ESM2 (ensemble)" internally to disambiguate prediction channels;
+# the website uses "ESM2-3state" everywhere. Mapping kept here so the
+# JSON is in the website's vocabulary.
+WEB_TOOL_NAME = {
+    "ESM2 (held-out)": "ESM2-3state",
+    "LMetalSite":      "LMetalSite",
+    "GPSite":          "GPSite",
+    "SSBONDPredict":   "SSBONDPredict",
+}
 
 # Operating thresholds chosen on the held-out validation set, mirroring
 # src/lib/paperData.ts BENCHMARK_THRESHOLDS.
@@ -179,18 +200,19 @@ def load_metal_type_map() -> dict:
     return out
 
 
-def stratified_yyhats(gt: dict, scores: dict, metal_map: dict, keep_metals: set
-                      ) -> tuple[np.ndarray, np.ndarray]:
-    """Build (y_true, y_score) arrays where Met positives are restricted to
-    keep_metals and Neg/Dis positives are zeroed (Met vs rest task)."""
+def stratified_yyhats(gt: dict, scores: dict, metal_map: dict,
+                      met_predicate) -> tuple[np.ndarray, np.ndarray]:
+    """Build (y_true, y_score) arrays for the Met-vs-rest task with Met
+    positives restricted to those matching met_predicate(metal, cofactor).
+    Unmatched Mets are skipped entirely (not counted as negatives)."""
     y_true, y_score = [], []
     for (protein, pos), label in gt.items():
         if (protein, pos) not in scores:
             continue
         if label == "Met":
-            elem, _ = metal_map.get((protein, pos), ("", ""))
-            if elem not in keep_metals:
-                continue  # excluded from this stratum (don't count as neg either)
+            elem, cof = metal_map.get((protein, pos), ("", ""))
+            if not met_predicate(elem, cof):
+                continue
             y_true.append(1)
         else:
             y_true.append(0)
@@ -199,10 +221,20 @@ def stratified_yyhats(gt: dict, scores: dict, metal_map: dict, keep_metals: set
 
 
 SHARED_METALS = {"ZN", "CA", "MG", "MN"}
-IRON_METALS = {"FE"}
+
+# Metal-stratum predicates over (metal, cofactor) entries from
+# met_metal_type_v2.tsv. The 'all' stratum matches every Met positive
+# (including unmapped ones — see build_arrays in benchmark_roc).
+METAL_STRATUM_PREDICATES = {
+    "shared_metals":     (lambda m, c: m in SHARED_METALS),
+    "iron_only":         (lambda m, c: m == "FE"),
+    "iron_4fe4s":        (lambda m, c: m == "FE" and c == "SF4"),
+    "iron_heme":         (lambda m, c: m == "FE" and c == "HEM"),
+    "iron_2fe2s_3fe4s":  (lambda m, c: m == "FE" and c in {"F3S", "FES"}),
+}
 
 
-def plot_metal_stratification(metal_results: dict, gt: dict, metal_map: dict,
+def plot_metal_stratification(raw_scores: dict, gt: dict, metal_map: dict,
                               outpath: str) -> None:
     fig, axes = plt.subplots(1, 2, figsize=STRIP_FIGSIZE, sharey=True)
 
@@ -211,17 +243,18 @@ def plot_metal_stratification(metal_results: dict, gt: dict, metal_map: dict,
         "LMetalSite":      "#2ca02c",
         "GPSite":          "#1f77b4",
     }
-    raw_scores = metal_results["raw_scores"]  # injected by caller
 
-    for ax, (label, keep_set) in zip(
+    for ax, (label, predicate) in zip(
         axes,
         [
-            ("Shared metals (Zn / Ca / Mg / Mn)", SHARED_METALS),
-            ("Iron only (Fe / Fe-S / heme)",     IRON_METALS),
+            ("Shared metals (Zn / Ca / Mg / Mn)",
+             METAL_STRATUM_PREDICATES["shared_metals"]),
+            ("Iron only (Fe / Fe-S / heme)",
+             METAL_STRATUM_PREDICATES["iron_only"]),
         ],
     ):
         for tool, scores in raw_scores.items():
-            y_true, y_score = stratified_yyhats(gt, scores, metal_map, keep_set)
+            y_true, y_score = stratified_yyhats(gt, scores, metal_map, predicate)
             if y_true.sum() == 0:
                 continue
             fpr, tpr, _ = roc_curve(y_true, y_score)
@@ -238,6 +271,74 @@ def plot_metal_stratification(metal_results: dict, gt: dict, metal_map: dict,
 
     fig.suptitle("Metal-type stratified ROC (Met vs rest)", fontsize=12, y=1.02)
     _save(fig, outpath)
+
+
+# ---------------------------------------------------------------------------
+# Metrics JSON export
+# ---------------------------------------------------------------------------
+def _round_or_none(x) -> float | None:
+    """Round to 4 dp; pass None through unchanged."""
+    return None if x is None else round(float(x), 4)
+
+
+def _metric_row(tool_web: str, task: str, stratum: str,
+                y_true: np.ndarray, y_score: np.ndarray) -> dict:
+    if y_true.size == 0 or y_true.sum() == 0:
+        auroc, ap = None, None
+    else:
+        fpr, tpr, _ = roc_curve(y_true, y_score)
+        auroc = auc(fpr, tpr)
+        ap = average_precision_score(y_true, y_score)
+    return {
+        "tool": tool_web,
+        "task": task,
+        "stratum": stratum,
+        "auroc": _round_or_none(auroc),
+        "ap": _round_or_none(ap),
+        "n_pos": int(y_true.sum()),
+        "n_total": int(y_true.size),
+    }
+
+
+def write_metrics_json(disulfide_yyhats: dict, metal_yyhats: dict,
+                       metal_raw_scores: dict, gt: dict,
+                       metal_map: dict) -> None:
+    import json
+    rows: list[dict] = []
+
+    # Disulfide — only the 'all' stratum (no metal-type stratification).
+    for tool_internal, (y_t, y_s) in disulfide_yyhats.items():
+        rows.append(_metric_row(WEB_TOOL_NAME[tool_internal],
+                                "disulfide", "all", y_t, y_s))
+
+    # Metal — 'all' stratum.
+    for tool_internal, (y_t, y_s) in metal_yyhats.items():
+        rows.append(_metric_row(WEB_TOOL_NAME[tool_internal],
+                                "metal_binding", "all", y_t, y_s))
+
+    # Metal — stratified by metal type / cofactor.
+    for stratum, predicate in METAL_STRATUM_PREDICATES.items():
+        for tool_internal, scores in metal_raw_scores.items():
+            y_t, y_s = stratified_yyhats(gt, scores, metal_map, predicate)
+            rows.append(_metric_row(WEB_TOOL_NAME[tool_internal],
+                                    "metal_binding", stratum, y_t, y_s))
+
+    payload = {
+        "generated_at": __import__("datetime").datetime.utcnow().isoformat(timespec="seconds") + "Z",
+        "source": "scripts/benchmark_web_panels.py over scripts/benchmark_roc.py",
+        "evaluation_set": {
+            "n_proteins_excluded": len(br.load_excluded_proteins(br.EMPTY_PDBS)
+                                       | br.load_excluded_proteins(br.SEQ_MISMATCHES)),
+            "n_cysteines": len(gt),
+        },
+        "metrics": rows,
+    }
+
+    os.makedirs(os.path.dirname(JSON_OUT), exist_ok=True)
+    with open(JSON_OUT, "w") as fh:
+        json.dump(payload, fh, indent=2)
+        fh.write("\n")
+    print(f"  wrote {JSON_OUT} ({len(rows)} rows)")
 
 
 # ---------------------------------------------------------------------------
@@ -325,15 +426,23 @@ def main() -> int:
     print("Rendering Fig S1 stratified strip...")
     metal_map = load_metal_type_map()
     print(f"  {len(metal_map)} metal-type mappings")
+    metal_raw_scores = {
+        "ESM2 (held-out)": esm2_metal,
+        "LMetalSite":      lmetalsite,
+        "GPSite":          gpsite,
+    }
     plot_metal_stratification(
-        {"raw_scores": {
-            "ESM2 (held-out)": esm2_metal,
-            "LMetalSite":      lmetalsite,
-            "GPSite":          gpsite,
-        }},
-        gt, metal_map,
+        metal_raw_scores, gt, metal_map,
         os.path.join(OUT_DIR, "figS1_metal_stratification.png"),
     )
+
+    # Persist all (tool, task, stratum) AUROC + AP values so the web
+    # page reads them from the same source as the figures. Mirrors
+    # src/lib/data/benchmark_metrics.json under the website repo if
+    # JSON_OUT is unset.
+    print("Writing benchmark_metrics.json...")
+    write_metrics_json(disulfide_yyhats, metal_yyhats,
+                       metal_raw_scores, gt, metal_map)
 
     print("Done.")
     return 0
