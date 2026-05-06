@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import SequenceViewer from '@/components/sequence/SequenceViewer';
 import EvidencePanel from '@/components/ui/EvidencePanel';
 import ClassificationBadge from '@/components/ui/ClassificationBadge';
@@ -31,6 +32,32 @@ export default function DomainClient({ sequence, classifications, evidence }: Do
   const classMap = new Map<number, CysteineRecord>();
   for (const c of classifications) classMap.set(c.cysPosition, c);
 
+  // Cross-link with the SequenceViewer: clicking a Cys fires a window event;
+  // we briefly highlight the matching row in the ESM2 evidence table and
+  // scroll it into view. The 3D viewer focuses the residue independently.
+  const [focusedCysPosition, setFocusedCysPosition] = useState<number | null>(null);
+  const rowRefs = useRef<Map<number, HTMLTableRowElement>>(new Map());
+
+  useEffect(() => {
+    const onFocus = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ cysPosition: number }>).detail;
+      if (!detail || typeof detail.cysPosition !== 'number') return;
+      setFocusedCysPosition(detail.cysPosition);
+      const row = rowRefs.current.get(detail.cysPosition);
+      row?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+    window.addEventListener('tricyp:focus-cys', onFocus as EventListener);
+    return () => window.removeEventListener('tricyp:focus-cys', onFocus as EventListener);
+  }, []);
+
+  // Auto-clear the highlight after the pulse duration so a second click on
+  // the same residue re-triggers the visual.
+  useEffect(() => {
+    if (focusedCysPosition === null) return;
+    const t = setTimeout(() => setFocusedCysPosition(null), 1800);
+    return () => clearTimeout(t);
+  }, [focusedCysPosition]);
+
   return (
     <div className="space-y-6">
       <SequenceViewer sequence={sequence} classifications={classifications} />
@@ -58,8 +85,18 @@ export default function DomainClient({ sequence, classifications, evidence }: Do
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {evidence.esm2Predictions.map((p) => {
                   const cls = classMap.get(p.cysPosition);
+                  const isFocused = focusedCysPosition === p.cysPosition;
                   return (
-                    <tr key={p.cysPosition}>
+                    <tr
+                      key={p.cysPosition}
+                      ref={(el) => {
+                        if (el) rowRefs.current.set(p.cysPosition, el);
+                        else rowRefs.current.delete(p.cysPosition);
+                      }}
+                      className={`transition-colors ${
+                        isFocused ? 'bg-amber-100 dark:bg-amber-900/40' : ''
+                      }`}
+                    >
                       <td className="px-3 py-2 font-mono">{p.cysPosition}</td>
                       <td className="px-3 py-2 text-gray-500">{p.negProb.toFixed(3)}</td>
                       <td className="px-3 py-2 text-red-600 dark:text-red-400">{p.disProb.toFixed(3)}</td>
