@@ -32,6 +32,7 @@ export default function Fig3APanel() {
       caption={FIG_3A_CAPTION}
       csvFilename="fig3a_source_stratification.csv"
       csvRows={csvRows}
+      anchor="fig3a"
     >
       <ResponsiveContainer width="100%" height={260}>
         <BarChart

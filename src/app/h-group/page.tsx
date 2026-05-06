@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getHGroupSummary } from '@/lib/queries';
 import type { HGroupSummary } from '@/lib/queries';
+import { summaryCache, CACHE_TTL, cachedQuery } from '@/lib/cache';
 import { FIG_5AB_CAPTION, HGROUP_HIGHLIGHTS } from '@/lib/paperData';
 import HGroupConfusionMatrix from './HGroupConfusionMatrix';
 
@@ -19,7 +20,13 @@ export default async function HGroupBrowserPage() {
   let summaries: HGroupSummary[] = [];
   let dbError = false;
   try {
-    summaries = await getHGroupSummary();
+    // Expensive query — long TTL until the materialized view lands.
+    summaries = await cachedQuery(
+      summaryCache,
+      'hgroup-summary-all',
+      CACHE_TTL.DOMAIN,
+      getHGroupSummary,
+    );
   } catch (e) {
     console.error('H-group summary query failed:', e);
     dbError = true;

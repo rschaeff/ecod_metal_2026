@@ -523,11 +523,17 @@ export interface FamilyListItem {
   nUnclassified: number;
 }
 
+// Canonical superkingdom values matched by the kingdom filter. Anything else
+// is treated as no filter so callers don't need to pre-validate.
+export const KINGDOMS = ['Bacteria', 'Archaea', 'Eukaryota', 'Viruses'] as const;
+export type Kingdom = typeof KINGDOMS[number];
+
 export async function getFamilyList(
   page: number = 1,
   limit: number = 50,
   sortBy: string = 'n_metal',
-  sortDir: 'asc' | 'desc' = 'desc'
+  sortDir: 'asc' | 'desc' = 'desc',
+  kingdom?: Kingdom | null,
 ): Promise<{ items: FamilyListItem[]; total: number }> {
   const allowedSorts: Record<string, string> = {
     f_group_id: 'fa.f_group_id',
@@ -544,11 +550,36 @@ export async function getFamilyList(
   const orderDir = sortDir === 'desc' ? 'DESC' : 'ASC';
   const offset = (page - 1) * limit;
 
+  // The kingdom filter restricts to F70 reps whose protein matches the
+  // selected superkingdom. F-groups with zero matching domains drop out
+  // because their domain_count aggregates to 0 inside the EXISTS clause.
+  // Params: $1=kingdom (optional), then $N=limit, $N+1=offset.
+  const params: (string | number)[] = [];
+  let kingdomFilter = '';
+  if (kingdom) {
+    params.push(kingdom);
+    kingdomFilter = `AND EXISTS (
+       SELECT 1
+       FROM ecod_commons.domains d
+       JOIN ecod_commons.proteins p ON d.protein_id = p.id
+       JOIN ecod_commons.protein_taxonomy pt
+            ON p.source_id = pt.source_id AND p.source_type = pt.source_type
+       WHERE d.id = ds.domain_id AND pt.superkingdom = $${params.length}
+     )`;
+  }
+  params.push(limit);
+  const limitPlaceholder = `$${params.length}`;
+  params.push(offset);
+  const offsetPlaceholder = `$${params.length}`;
+
   const [countResult, rows] = await Promise.all([
     queryOne<{ count: string }>(
       `SELECT count(DISTINCT fa.f_group_id)::text as count
        FROM cys_classification.domain_summary ds
-       JOIN ecod_commons.f_group_assignments fa ON ds.domain_id = fa.domain_id`
+       JOIN ecod_commons.f_group_assignments fa ON ds.domain_id = fa.domain_id
+       WHERE 1=1
+       ${kingdomFilter}`,
+      kingdom ? [kingdom] : [],
     ),
     query<{
       f_group_id: string;
@@ -574,10 +605,12 @@ export async function getFamilyList(
        JOIN ecod_commons.f_group_assignments fa ON ds.domain_id = fa.domain_id
        LEFT JOIN ecod_rep.cluster fc ON fa.f_group_id = fc.id::text AND fc.type = 'F'
        LEFT JOIN ecod_rep.cluster xc ON fa.x_group_id = xc.id::text AND xc.type = 'X'
+       WHERE 1=1
+       ${kingdomFilter}
        GROUP BY fa.f_group_id, fc.name, fa.x_group_id, xc.name
        ORDER BY ${orderCol} ${orderDir}
-       LIMIT $1 OFFSET $2`,
-      [limit, offset]
+       LIMIT ${limitPlaceholder} OFFSET ${offsetPlaceholder}`,
+      params,
     ),
   ]);
 
@@ -942,21 +975,41 @@ export async function searchQuery(q: string): Promise<SearchResult[]> {
     }
   }
 
-  // Check if it looks like an F-group ID (dotted notation like 131.1.1.0)
+  // Cluster lookup: a single dotted query like "3380.1" can match multiple
+  // ECOD levels (X / H / T / F). Pull every matching cluster row and surface
+  // them in one block; the search bar lets the user pick the right level.
   if (/^\d+(\.\d+)*$/.test(trimmed)) {
-    const row = await queryOne<{ id: string; name: string }>(
-      `SELECT c.id::text, COALESCE(c.name, c.id::text) as name
+    const rows = await query<{ id: string; type: string; name: string }>(
+      `SELECT c.id::text, c.type, COALESCE(c.name, c.id::text) as name
        FROM ecod_rep.cluster c
-       WHERE c.id::text = $1 AND c.type = 'F'`,
-      [trimmed]
+       WHERE c.id::text = $1 AND c.type IN ('X', 'H', 'T', 'F')
+       ORDER BY array_position(ARRAY['F','T','H','X']::text[], c.type)`,
+      [trimmed],
     );
-    if (row) {
-      results.push({
-        type: 'family',
-        id: row.id,
-        label: `F-group ${row.id}`,
-        description: row.name,
-      });
+    for (const r of rows) {
+      if (r.type === 'F') {
+        results.push({
+          type: 'family',
+          id: r.id,
+          label: `F-group ${r.id}`,
+          description: r.name,
+        });
+      } else if (r.type === 'H') {
+        results.push({
+          type: 'hgroup',
+          id: r.id,
+          label: `H-group ${r.id}`,
+          description: r.name,
+        });
+      } else if (r.type === 'X') {
+        results.push({
+          type: 'xgroup',
+          id: r.id,
+          label: `X-group ${r.id}`,
+          description: r.name,
+        });
+      }
+      // T-group has no dedicated TriCyp surface; skip in results.
     }
   }
 

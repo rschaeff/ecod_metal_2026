@@ -33,6 +33,7 @@ export default function FigS3Panel({ data }: FigS3PanelProps) {
       caption={FIG_S3_CAPTION}
       csvFilename="figS3_confidence_distribution.csv"
       csvRows={csvRows}
+      anchor="figS3"
     >
       <ConfidenceBarChart data={data} />
     </PanelCard>

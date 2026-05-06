@@ -8,7 +8,7 @@ interface SearchBarProps {
   placeholder?: string;
 }
 
-export default function SearchBar({ compact = false, placeholder = 'Search domain, PDB, or family ID...' }: SearchBarProps) {
+export default function SearchBar({ compact = false, placeholder = 'Search domain, PDB, UniProt, or F/H/X-group...' }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Array<{ type: string; id: string; label: string; description: string }>>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -47,9 +47,15 @@ export default function SearchBar({ compact = false, placeholder = 'Search domai
     setShowDropdown(false);
     setQuery('');
     if (result.type === 'domain') {
-      router.push(`/domain/${result.id}`);
+      router.push(`/domain/${encodeURIComponent(result.id)}`);
     } else if (result.type === 'family') {
-      router.push(`/family/${result.id}`);
+      router.push(`/family/${encodeURIComponent(result.id)}`);
+    } else if (result.type === 'hgroup') {
+      router.push(`/h-group/${encodeURIComponent(result.id)}`);
+    } else if (result.type === 'xgroup') {
+      // No dedicated X-group surface; fall back to the family browser scoped
+      // by X-group via the existing browser sort (no kingdom filter applied).
+      router.push(`/family?sortBy=x_group_name`);
     }
   };
 

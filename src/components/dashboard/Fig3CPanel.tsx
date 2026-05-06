@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 import type { SuperkingdomBreakdown } from '@/lib/queries';
 import { CLASS_COLORS, CLASS_KEYS } from '@/lib/classColors';
@@ -13,6 +14,11 @@ interface Fig3CPanelProps {
 const KINGDOMS = ['Bacteria', 'Archaea', 'Eukaryota'] as const;
 
 export default function Fig3CPanel({ taxonomy }: Fig3CPanelProps) {
+  const router = useRouter();
+  const drillDown = (kingdom: string) => {
+    router.push(`/family?kingdom=${encodeURIComponent(kingdom)}`);
+  };
+
   const rows = KINGDOMS.map((k) => {
     const row = taxonomy.find((t) => t.superkingdom === k);
     if (!row) {
@@ -56,6 +62,7 @@ export default function Fig3CPanel({ taxonomy }: Fig3CPanelProps) {
       caption={FIG_3C_CAPTION}
       csvFilename="fig3c_kingdom_rates.csv"
       csvRows={csvRows}
+      anchor="fig3c"
     >
       <ResponsiveContainer width="100%" height={260}>
         <BarChart
@@ -63,6 +70,11 @@ export default function Fig3CPanel({ taxonomy }: Fig3CPanelProps) {
           data={chartData}
           margin={{ top: 8, right: 24, bottom: 8, left: 24 }}
           barCategoryGap={16}
+          onClick={(e) => {
+            const kingdom = (e?.activePayload?.[0]?.payload as { kingdom?: string } | undefined)?.kingdom;
+            if (kingdom) drillDown(kingdom);
+          }}
+          style={{ cursor: 'pointer' }}
         >
           <XAxis type="number" domain={[0, 100]} tickFormatter={(v: number) => `${v}%`} />
           <YAxis type="category" dataKey="kingdom" width={90} />

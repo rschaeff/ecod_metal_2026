@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getFamilyInfo, getFamilyDomains, getFamilyTaxonomy } from '@/lib/queries';
 import FamilyClient from './FamilyClient';
+import KingdomMixBar from '@/components/dashboard/KingdomMixBar';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,12 +58,11 @@ export default async function FamilyPage({ params, searchParams }: FamilyPagePro
           {familyInfo.domainCount.toLocaleString()} F70 representative domains
         </p>
         {taxonomy.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {taxonomy.map((t) => (
-              <span key={t.superkingdom} className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                {t.superkingdom}: {t.nDomains.toLocaleString()}
-              </span>
-            ))}
+          <div className="mt-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+              Kingdom mix
+            </p>
+            <KingdomMixBar taxonomy={taxonomy} />
           </div>
         )}
       </div>

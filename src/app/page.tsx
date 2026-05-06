@@ -9,6 +9,7 @@ import type {
   SuperkingdomBreakdown,
   SourceTypeBreakdown,
 } from '@/lib/queries';
+import { summaryCache, CACHE_TTL, cachedQuery } from '@/lib/cache';
 import SearchBar from '@/components/ui/SearchBar';
 import Fig3APanel from '@/components/dashboard/Fig3APanel';
 import Fig3BPanel from '@/components/dashboard/Fig3BPanel';
@@ -48,10 +49,10 @@ export default async function DashboardPage() {
 
   try {
     [summary, confidence, taxonomy, sources] = await Promise.all([
-      getDashboardSummary(),
-      getConfidenceDistribution(),
-      getSuperkingdomBreakdown(),
-      getSourceTypeBreakdown(),
+      cachedQuery(summaryCache, 'dashboard-summary', CACHE_TTL.SUMMARY, getDashboardSummary),
+      cachedQuery(summaryCache, 'confidence-distribution', CACHE_TTL.SUMMARY, getConfidenceDistribution),
+      cachedQuery(summaryCache, 'superkingdom-breakdown', CACHE_TTL.SUMMARY, getSuperkingdomBreakdown),
+      cachedQuery(summaryCache, 'source-type-breakdown', CACHE_TTL.SUMMARY, getSourceTypeBreakdown),
     ]);
   } catch (e) {
     console.error('Dashboard DB error:', e);

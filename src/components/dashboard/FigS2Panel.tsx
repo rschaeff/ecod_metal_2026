@@ -41,6 +41,7 @@ export default function FigS2Panel({ sources }: FigS2PanelProps) {
       caption={FIG_S2_CAPTION}
       csvFilename="figS2_source_breakdown.csv"
       csvRows={csvRows}
+      anchor="figS2"
     >
       <ResponsiveContainer width="100%" height={260}>
         <BarChart

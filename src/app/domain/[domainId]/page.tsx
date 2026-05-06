@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getDomainDetail, getDomainClassifications, getDomainEvidence } from '@/lib/queries';
 import DomainClient from './DomainClient';
+import CopyButton from '@/components/ui/CopyButton';
+import { PAPER_REF } from '@/lib/paperData';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,6 +119,44 @@ export default async function DomainPage({ params }: DomainPageProps) {
                 <span className="font-medium text-gray-500">{nUnclassified}</span>
               </div>
             </div>
+          </div>
+
+          {/* Cite this domain */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Cite this domain</h2>
+              <CopyButton
+                label="text"
+                text={
+                  `Per-cysteine three-state classification for ECOD domain ${domainInfo.domainId} ` +
+                  `from TriCyp (${PAPER_REF.title}; ${PAPER_REF.authors}, ${PAPER_REF.year})` +
+                  (PAPER_REF.bioRxivUrl ? `. ${PAPER_REF.bioRxivUrl}` : '')
+                }
+              />
+            </div>
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+              Per-cysteine three-state classification for ECOD domain{' '}
+              <span className="font-mono">{domainInfo.domainId}</span> from TriCyp (
+              <em>{PAPER_REF.title}</em>; {PAPER_REF.authors}, {PAPER_REF.year})
+              {PAPER_REF.bioRxivUrl ? (
+                <>
+                  .{' '}
+                  <a
+                    href={PAPER_REF.bioRxivUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-amber-600 dark:text-amber-400 hover:underline break-all"
+                  >
+                    {PAPER_REF.bioRxivUrl}
+                  </a>
+                </>
+              ) : (
+                <>
+                  {' '}<span className="italic text-gray-500 dark:text-gray-400">— preprint URL pending</span>
+                </>
+              )}
+              .
+            </p>
           </div>
 
           {/* ECOD Hierarchy */}

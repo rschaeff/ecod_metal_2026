@@ -30,6 +30,7 @@ export default function Fig3DPanel() {
       caption={FIG_3D_CAPTION}
       csvFilename="fig3d_subcellular.csv"
       csvRows={csvRows}
+      anchor="fig3d"
     >
       <ResponsiveContainer width="100%" height={320}>
         <BarChart

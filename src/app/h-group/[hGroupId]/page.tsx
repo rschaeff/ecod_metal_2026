@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getHGroupDetail } from '@/lib/queries';
+import { summaryCache, CACHE_TTL, cachedQuery } from '@/lib/cache';
 import { HGROUP_HIGHLIGHTS } from '@/lib/paperData';
 import FigureImage from '@/components/ui/FigureImage';
 
@@ -63,7 +64,12 @@ export default async function HGroupDetailPage({ params }: HGroupPageProps) {
 
   let detail: Awaited<ReturnType<typeof getHGroupDetail>> = null;
   try {
-    detail = await getHGroupDetail(hGroupId);
+    detail = await cachedQuery(
+      summaryCache,
+      `hgroup-detail-${hGroupId}`,
+      CACHE_TTL.FAMILY,
+      () => getHGroupDetail(hGroupId),
+    );
   } catch (e) {
     console.error('H-group detail query failed:', e);
   }

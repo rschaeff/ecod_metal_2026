@@ -9,6 +9,7 @@ interface PanelCardProps {
   csvFilename: string;        // download filename, e.g., "fig3a.csv"
   csvRows: (string | number)[][];  // first row is header
   children: ReactNode;        // the chart itself
+  anchor?: string;            // optional id for /paper and /about jump links
 }
 
 function rowsToCsv(rows: (string | number)[][]): string {
@@ -31,6 +32,7 @@ export default function PanelCard({
   csvFilename,
   csvRows,
   children,
+  anchor,
 }: PanelCardProps) {
   const [showData, setShowData] = useState(false);
 
@@ -48,7 +50,10 @@ export default function PanelCard({
   };
 
   return (
-    <section className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <section
+      id={anchor}
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 scroll-mt-20"
+    >
       <header className="flex items-baseline justify-between gap-4 mb-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">

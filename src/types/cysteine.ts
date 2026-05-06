@@ -127,7 +127,7 @@ export interface DomainEvidence {
 // ---- Search ----
 
 export interface SearchResult {
-  type: 'domain' | 'family' | 'pdb';
+  type: 'domain' | 'family' | 'hgroup' | 'xgroup' | 'pdb';
   id: string;
   label: string;
   description: string;

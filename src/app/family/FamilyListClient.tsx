@@ -11,6 +11,7 @@ interface FamilyListClientProps {
   total: number;
   sortBy: string;
   sortDir: 'asc' | 'desc';
+  kingdom?: string | null;
 }
 
 const columns = [
@@ -24,16 +25,25 @@ const columns = [
   { key: 'n_unclassified', label: 'Free thiol' },
 ];
 
-export default function FamilyListClient({ families, page, totalPages, total, sortBy, sortDir }: FamilyListClientProps) {
+export default function FamilyListClient({
+  families,
+  page,
+  totalPages,
+  total,
+  sortBy,
+  sortDir,
+  kingdom,
+}: FamilyListClientProps) {
   const router = useRouter();
+  const kingdomQs = kingdom ? `&kingdom=${encodeURIComponent(kingdom)}` : '';
 
   const handleSort = (key: string) => {
     const newDir = sortBy === key && sortDir === 'desc' ? 'asc' : 'desc';
-    router.push(`/family?page=1&sortBy=${key}&sortDir=${newDir}`);
+    router.push(`/family?page=1&sortBy=${key}&sortDir=${newDir}${kingdomQs}`);
   };
 
   const handlePage = (newPage: number) => {
-    router.push(`/family?page=${newPage}&sortBy=${sortBy}&sortDir=${sortDir}`);
+    router.push(`/family?page=${newPage}&sortBy=${sortBy}&sortDir=${sortDir}${kingdomQs}`);
   };
 
   const sortIcon = (col: string) => {
