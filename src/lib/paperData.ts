@@ -324,11 +324,16 @@ export const BENCHMARK_IRON_ONLY: IronOnlyEntry[] = [
 ];
 
 export const BENCHMARK_IRON_ONLY_TEXT =
-  'On iron-only metal sites the gap between ESM2-3state and structure-aware ' +
-  'baselines widens sharply: ESM2-3state reaches AUROC 0.993, while ' +
-  'LMetalSite and GPSite drop to 0.917 and 0.877 respectively. Sequence-only ' +
-  'classification of iron coordination is the regime where pretraining on ' +
-  'evolutionary context most clearly outperforms structure-template lookup.';
+  'The iron-stratum AUROC gap reflects training-set scope rather than ' +
+  'algorithmic superiority. ESM2-3state was trained directly on cysteine ' +
+  '3-state labels covering Fe / Fe-S / heme coordination; LMetalSite and ' +
+  'GPSite were trained on broader metal-binding objectives that under-' +
+  'cover iron coordination at cysteine residues. On the metals all three ' +
+  'tools share training coverage (Zn / Ca / Mg / Mn) the AUROC gap ' +
+  'narrows from 8.5 to 3.7 points. Iron is roughly 83% of positives in ' +
+  'the held-out set, so the all-metals number is iron-dominated and ' +
+  'should be read alongside this stratification — not as a head-to-head ' +
+  'outperformance claim.';
 
 // Fig 2 + Fig S1: per-tool, per-stratum AUROC and AP. Numbers not yet
 // transcribed from the paper figure_data CSVs are marked `null`; the page
@@ -366,9 +371,13 @@ export const FIG_2_CAPTION =
   'metal-binding against LMetalSite and GPSite.';
 
 export const FIG_S1_CAPTION =
-  'Metal-type-stratified ROC. The all-metal AUROC is dominated by zinc; ' +
-  'stratifying by individual metal reveals that ESM2-3state generalises across ' +
-  'metal types while structure-template tools degrade most on iron coordination.';
+  'Metal-type-stratified ROC. The all-metal AUROC is dominated by iron — ' +
+  'roughly 83% of positives in the held-out set are Fe-coordinated. ' +
+  'Stratifying by metal type exposes a training-scope difference: ' +
+  'ESM2-3state was trained on cysteine labels that include Fe / Fe-S / ' +
+  'heme; LMetalSite and GPSite were not. On metals all three tools were ' +
+  'trained for (Zn / Ca / Mg / Mn), AUROC differences narrow ' +
+  'substantially.';
 
 // ----------------------------------------------------------------------------
 // H-group browser (Fig 5A,B) and detail (Fig 5C–E)
