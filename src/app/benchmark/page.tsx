@@ -14,8 +14,8 @@ import {
 const PAGE_TITLE = 'Benchmark';
 const PAGE_DESCRIPTION =
   'Held-out benchmarking of ESM2-3state cysteine classification against ' +
-  'SSBONDPredict, LMetalSite, and GPSite, including metal-type-stratified ' +
-  'AUROC and the iron-only finding from paper Fig S1.';
+  'SSBONDPredict, LMetalSite, and GPSite, with metal-type-stratified ' +
+  'AUROC reported alongside the all-metals comparison.';
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -74,33 +74,6 @@ export default function BenchmarkPage() {
         </p>
       </header>
 
-      {/* Iron-only prominent finding */}
-      <section className="mb-10 bg-gradient-to-br from-green-50 to-white dark:from-green-900/20 dark:to-gray-800 border border-green-200 dark:border-green-700 rounded-lg p-6 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wider text-green-700 dark:text-green-400">
-          Headline finding · Fig S1
-        </p>
-        <h2 className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-100">
-          Iron-only metal-binding ROC
-        </h2>
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {BENCHMARK_IRON_ONLY.map((row) => (
-            <div
-              key={row.tool}
-              className="bg-white dark:bg-gray-800 rounded-md border border-green-100 dark:border-green-800 px-4 py-3"
-            >
-              <p className="text-sm text-gray-500 dark:text-gray-400">{row.tool}</p>
-              <p className="mt-1 text-3xl font-bold text-green-700 dark:text-green-300 font-mono">
-                {row.auroc.toFixed(3)}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">AUROC, iron-only</p>
-            </div>
-          ))}
-        </div>
-        <p className="mt-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed max-w-3xl">
-          {BENCHMARK_IRON_ONLY_TEXT}
-        </p>
-      </section>
-
       {/* Fig 2 panels */}
       <section className="mb-10">
         <header className="mb-4">
@@ -155,7 +128,9 @@ export default function BenchmarkPage() {
         </div>
       </section>
 
-      {/* Fig S1 strip */}
+      {/* Fig S1 strip — metal-type-stratified ROC. Iron is one of several
+          strata; the all-metals number is dominated by Fe (FeS / heme), so
+          this section reports per-stratum AUROC for fair comparison. */}
       <section className="mb-10">
         <header className="mb-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -170,17 +145,45 @@ export default function BenchmarkPage() {
         </header>
         <FigureImage
           src="/figures/figS1_iron_only_roc.png"
-          alt="Fig S1 — Iron-only ROC strip"
-          label="Fig S1 · Iron-only ROC"
-          description="ROC curves for the iron-only metal subset across ESM2-3state, LMetalSite, GPSite."
+          alt="Fig S1 — metal-type-stratified ROC strip"
+          label="Fig S1 · Metal-type-stratified ROC"
+          description="ROC curves stratified by metal type (Fe / Zn / Ca / Mg / Mn) across ESM2-3state, LMetalSite, GPSite."
           className="w-full"
         />
+
+        {/* Iron stratum AUROC — demoted from a marquee finding. The
+            iron stratum is shown here because the supplementary numbers
+            are transcribed; Zn/Ca/Mg/Mn live in BENCHMARK_TABLE and
+            currently render as em-dashes until the figure-data CSVs
+            are loaded. */}
+        <div className="mt-6 bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            Iron stratum (Fe / Fe-S / heme)
+          </p>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 max-w-3xl">
+            {BENCHMARK_IRON_ONLY_TEXT}
+          </p>
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {BENCHMARK_IRON_ONLY.map((row) => (
+              <div
+                key={row.tool}
+                className="bg-white dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2"
+              >
+                <p className="text-xs text-gray-500 dark:text-gray-400">{row.tool}</p>
+                <p className="mt-0.5 text-xl font-semibold text-gray-900 dark:text-gray-100 font-mono">
+                  {row.auroc.toFixed(3)}
+                </p>
+                <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">AUROC · Fe</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* Tabular summary */}
       <PanelCard
         title="AUROC / AP per tool per stratum"
-        caption="Tabular summary of the benchmark. Iron-only AUROC values are filled in from the manuscript headline finding; remaining cells will be populated once the paper figure-data CSVs are loaded."
+        caption="Tabular summary of the benchmark. Iron stratum cells are transcribed from the manuscript supplementary; the all-metals and remaining per-metal strata will be populated once the figure-data CSVs are loaded."
         csvFilename="benchmark_summary.csv"
         csvRows={benchmarkCsvRows}
       >
