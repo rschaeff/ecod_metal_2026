@@ -1,7 +1,18 @@
 #!/usr/bin/env bash
-# Load the dione dump into a fresh sangala:45000 database.
+# Load the three dione dumps + sidecars into the destination database
+# in the order required by inter-schema FKs. The dump-from-dione.sh
+# script splits production state into:
+#   prereq-types.sql        public schema types referenced by ecod_rep
+#   tricyp-ecod_rep.sql.gz  ecod_rep schema (cluster + custom types)
+#   prereq-functions.sql    ecod_commons trigger functions
+#   tricyp-ecod_commons.sql.gz  cherry-picked ecod_commons tables
+#   tricyp-cys_classification.sql.gz  cys_classification schema +
+#                                     hgroup_summary[_struct] MVs
+# Order: types → ecod_rep → trigger funcs → ecod_commons →
+# cys_classification (because cys_classification FKs into
+# ecod_commons.domains and the MVs reference ecod_rep.cluster).
 #
-# DANGEROUS: --clean (in the dump) will DROP existing TriCyp objects
+# DANGEROUS: --clean (in each dump) will DROP existing TriCyp objects
 # in the destination DB. Confirm you're loading into a fresh schema
 # or one you intend to overwrite before running.
 #
@@ -10,8 +21,7 @@
 
 set -euo pipefail
 
-DUMP="$(cd "$(dirname "$0")" && pwd)/dump/tricyp-prod.sql.gz"
-[[ -f "$DUMP" ]] || { echo "Missing $DUMP — run deploy/dump-from-dione.sh first." >&2; exit 2; }
+DUMP_DIR="$(cd "$(dirname "$0")" && pwd)/dump"
 
 DST_HOST="${DST_HOST:-sangala}"
 DST_PORT="${DST_PORT:-45000}"
@@ -23,13 +33,23 @@ if [[ -z "${DST_PASSWORD:-}" ]]; then
   exit 2
 fi
 
-echo "About to load $(du -h "$DUMP" | cut -f1) into $DST_HOST:$DST_PORT/$DST_DB"
-echo "(--clean is on — existing TriCyp objects will be DROPPED)"
+# Verify all expected artefacts are present before we touch anything.
+for f in prereq-types.sql prereq-functions.sql \
+         tricyp-ecod_commons.sql.gz tricyp-ecod_rep.sql.gz \
+         tricyp-cys_classification.sql.gz; do
+  if [[ ! -f "$DUMP_DIR/$f" ]]; then
+    echo "Missing $DUMP_DIR/$f — re-run deploy/dump-from-dione.sh first." >&2
+    exit 2
+  fi
+done
+
+total_size=$(du -ch "$DUMP_DIR"/*.sql.gz | tail -1 | cut -f1)
+echo "About to load $total_size into $DST_HOST:$DST_PORT/$DST_DB"
+echo "(--clean is on in every dump — existing TriCyp objects will be DROPPED)"
 read -p "Continue? [y/N] " ans
 [[ "$ans" =~ ^[Yy] ]] || { echo "Aborted."; exit 1; }
 
-# Ensure the destination DB exists and the three schemas are created
-# (the dump's --clean drops objects but doesn't create the schemas).
+# Ensure the destination DB exists and the three schemas are created.
 PGPASSWORD="$DST_PASSWORD" psql \
   --host="$DST_HOST" --port="$DST_PORT" --username="$DST_USER" \
   --dbname=postgres \
@@ -45,48 +65,44 @@ PGPASSWORD="$DST_PASSWORD" psql \
    CREATE SCHEMA IF NOT EXISTS ecod_rep;
    CREATE SCHEMA IF NOT EXISTS cys_classification;"
 
-# pg_dump --table dumps the table-level DDL (incl. trigger CREATEs)
-# but not the trigger functions those CREATEs reference, since the
-# functions live in ecod_commons schema-level objects we did not
-# select. Pre-create them on the destination so the dump's CREATE
-# TRIGGER statements resolve. Idempotent (CREATE OR REPLACE).
-PREREQ="$(dirname "$DUMP")/prereq-functions.sql"
-if [[ -f "$PREREQ" ]]; then
-  echo "Applying prereq functions ($PREREQ)..."
+run_psql() {
   PGPASSWORD="$DST_PASSWORD" psql \
     --host="$DST_HOST" --port="$DST_PORT" --username="$DST_USER" \
-    --dbname="$DST_DB" --quiet --set=ON_ERROR_STOP=1 \
-    -f "$PREREQ"
-else
-  echo "Note: $PREREQ missing — re-run dump-from-dione.sh or apply by hand." >&2
-fi
+    --dbname="$DST_DB" --quiet --no-psqlrc --set=ON_ERROR_STOP=1 "$@"
+}
 
-echo "Loading dump..."
-gunzip -c "$DUMP" \
-  | PGPASSWORD="$DST_PASSWORD" psql \
-      --host="$DST_HOST" --port="$DST_PORT" --username="$DST_USER" \
-      --dbname="$DST_DB" \
-      --quiet --no-psqlrc \
-      --set=ON_ERROR_STOP=1 \
-      2> >(tee "$(dirname "$DUMP")/psql_load.log" >&2)
+echo "[1/5] prereq-types.sql"
+run_psql -f "$DUMP_DIR/prereq-types.sql"
+
+echo "[2/5] ecod_rep schema"
+gunzip -c "$DUMP_DIR/tricyp-ecod_rep.sql.gz" \
+  | run_psql 2> "$DUMP_DIR/psql_load_ecod_rep.log"
+
+echo "[3/5] prereq-functions.sql"
+run_psql -f "$DUMP_DIR/prereq-functions.sql"
+
+echo "[4/5] ecod_commons cherry-picked tables"
+gunzip -c "$DUMP_DIR/tricyp-ecod_commons.sql.gz" \
+  | run_psql 2> "$DUMP_DIR/psql_load_ecod_commons.log"
+
+echo "[5/5] cys_classification schema (+ MVs)"
+gunzip -c "$DUMP_DIR/tricyp-cys_classification.sql.gz" \
+  | run_psql 2> "$DUMP_DIR/psql_load_cys.log"
 
 echo
 echo "Loaded. Refreshing materialized views..."
-PGPASSWORD="$DST_PASSWORD" psql \
-  --host="$DST_HOST" --port="$DST_PORT" --username="$DST_USER" \
-  --dbname="$DST_DB" -c \
-  "REFRESH MATERIALIZED VIEW cys_classification.hgroup_summary;
-   REFRESH MATERIALIZED VIEW cys_classification.hgroup_summary_struct;"
+run_psql -c "REFRESH MATERIALIZED VIEW cys_classification.hgroup_summary;
+             REFRESH MATERIALIZED VIEW cys_classification.hgroup_summary_struct;"
 
 echo
 echo "Smoke counts on $DST_HOST/$DST_DB:"
-PGPASSWORD="$DST_PASSWORD" psql \
-  --host="$DST_HOST" --port="$DST_PORT" --username="$DST_USER" \
-  --dbname="$DST_DB" -c \
+run_psql -c \
   "SELECT
-     (SELECT count(*) FROM ecod_commons.domains)                             AS domains,
-     (SELECT count(*) FROM ecod_commons.proteins)                            AS proteins,
-     (SELECT count(*) FROM cys_classification.cysteine_classifications)      AS classifications,
+     (SELECT count(*) FROM ecod_commons.domains)                              AS domains,
+     (SELECT count(*) FROM ecod_commons.proteins)                             AS proteins,
+     (SELECT count(*) FROM ecod_rep.cluster)                                  AS rep_clusters,
+     (SELECT count(*) FROM cys_classification.cysteine_classifications)       AS classifications,
      (SELECT count(*) FROM cys_classification.esm2_run_domains WHERE run_id=1) AS paper_v1,
-     (SELECT count(*) FROM cys_classification.uniprot_subcellular)           AS uniprot_subcellular,
-     (SELECT count(*) FROM cys_classification.hgroup_summary)                AS hgroup_summary;"
+     (SELECT count(*) FROM cys_classification.uniprot_subcellular)            AS subcellular,
+     (SELECT count(*) FROM cys_classification.hgroup_summary)                 AS hgroup_summary,
+     (SELECT count(*) FROM cys_classification.hgroup_summary_struct)          AS hgroup_summary_struct;"
