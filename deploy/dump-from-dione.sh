@@ -79,6 +79,23 @@ echo "Dumping from $SRC_HOST:$SRC_PORT/$SRC_DB → $OUT"
 PGPASSWORD="$SRC_PASSWORD" pg_dump "${PG_DUMP_ARGS[@]}" 2> "$OUT_DIR/pg_dump.log" \
   | gzip -c > "$OUT"
 
+# Trigger functions live as ecod_commons schema-level objects that
+# --table won't pick up. Pull the two referenced from our table
+# triggers into a sidecar SQL file the load script applies before
+# the main load. Re-pull on every dump so renames upstream stay in
+# sync.
+PREREQ="$OUT_DIR/prereq-functions.sql"
+echo "Pulling prereq functions → $PREREQ"
+PGPASSWORD="$SRC_PASSWORD" psql \
+  --host="$SRC_HOST" --port="$SRC_PORT" --username="$SRC_USER" \
+  --dbname="$SRC_DB" -t -A -c "
+SELECT pg_get_functiondef(p.oid) || ';'
+  FROM pg_proc p
+  JOIN pg_namespace n ON p.pronamespace = n.oid
+ WHERE n.nspname = 'ecod_commons'
+   AND p.proname IN ('update_timestamp', 'update_version_stats')" \
+  > "$PREREQ"
+
 echo
 echo "Size:"
 ls -lh "$OUT"

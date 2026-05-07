@@ -45,6 +45,22 @@ PGPASSWORD="$DST_PASSWORD" psql \
    CREATE SCHEMA IF NOT EXISTS ecod_rep;
    CREATE SCHEMA IF NOT EXISTS cys_classification;"
 
+# pg_dump --table dumps the table-level DDL (incl. trigger CREATEs)
+# but not the trigger functions those CREATEs reference, since the
+# functions live in ecod_commons schema-level objects we did not
+# select. Pre-create them on the destination so the dump's CREATE
+# TRIGGER statements resolve. Idempotent (CREATE OR REPLACE).
+PREREQ="$(dirname "$DUMP")/prereq-functions.sql"
+if [[ -f "$PREREQ" ]]; then
+  echo "Applying prereq functions ($PREREQ)..."
+  PGPASSWORD="$DST_PASSWORD" psql \
+    --host="$DST_HOST" --port="$DST_PORT" --username="$DST_USER" \
+    --dbname="$DST_DB" --quiet --set=ON_ERROR_STOP=1 \
+    -f "$PREREQ"
+else
+  echo "Note: $PREREQ missing — re-run dump-from-dione.sh or apply by hand." >&2
+fi
+
 echo "Loading dump..."
 gunzip -c "$DUMP" \
   | PGPASSWORD="$DST_PASSWORD" psql \
