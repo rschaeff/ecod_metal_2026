@@ -42,9 +42,11 @@ if [ -f "$PROD_DIR/start.sh" ]; then
 fi
 
 # 1) Standalone server bundle + minimal node_modules. --delete prunes
-#    stale files from PROD_DIR; excludes preserve runtime / env / launcher.
+#    stale files from PROD_DIR; --force lets it recurse into non-empty
+#    leftover dirs (e.g. a stale .git/ from the pre-rsync git-pull-on-prod
+#    layout). Excludes preserve runtime / env / launcher.
 echo "  Copying standalone server..."
-rsync -a --delete \
+rsync -a --delete --force \
     --exclude='logs' \
     --exclude='.next-server.pid' \
     --exclude='.env.production' \
@@ -94,12 +96,16 @@ for mangled in $(grep -ohP 'e\.y\("[^"]+"\)' "$PROD_DIR/.next/server/chunks/"*.j
 done
 cd "$DEV_DIR"
 
-# 7) Record the deployed SHA so "what's running?" is answerable from prod
+# 7) Record the deployed SHA so "what's running?" is answerable from prod.
+#    The dirty check excludes next-env.d.ts: Next.js rewrites it on every
+#    `npm run build` (the import path flips between `.next/types` and
+#    `.next/dev/types` depending on mode), so the file is permanently
+#    "M" right after a build and would noise every deploy as dirty.
 GIT="LD_LIBRARY_PATH= git -c safe.directory=$DEV_DIR -C $DEV_DIR"
 SHA=$(eval $GIT rev-parse HEAD)
 SUBJ=$(eval $GIT log -1 --pretty=%s)
 DATE=$(eval $GIT log -1 --pretty=%cI)
-DIRTY=$(eval $GIT status --porcelain | head -1)
+DIRTY=$(eval $GIT status --porcelain -- ':!next-env.d.ts' | head -1)
 {
     echo "sha=$SHA"
     echo "subject=$SUBJ"
