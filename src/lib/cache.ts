@@ -3,11 +3,27 @@ interface CacheEntry<T> {
   expires: number;
 }
 
+const DEFAULT_MAX_ENTRIES = 5000;
+
+/**
+ * In-memory LRU cache with per-entry TTL. Map iteration order is insertion
+ * order in JS, so the oldest key is `cache.keys().next().value`. `get` and
+ * `set` re-insert to bump entries to the MRU end; `set` evicts the LRU when
+ * the entry count exceeds `maxEntries`.
+ *
+ * The size cap is a DoS defense: every public route that takes a
+ * user-controlled string (search q, domain id, h-group id, …) feeds it into
+ * a cache key. Without a cap, an attacker can issue requests with distinct
+ * IDs to grow the cache without bound.
+ */
 class TTLCache<T> {
   private cache = new Map<string, CacheEntry<T>>();
   private cleanupInterval: NodeJS.Timeout | null = null;
 
-  constructor(private cleanupIntervalMs: number = 60000) {
+  constructor(
+    private cleanupIntervalMs: number = 60000,
+    private maxEntries: number = DEFAULT_MAX_ENTRIES,
+  ) {
     if (typeof setInterval !== 'undefined') {
       this.cleanupInterval = setInterval(() => this.cleanup(), cleanupIntervalMs);
     }
@@ -22,14 +38,24 @@ class TTLCache<T> {
       return undefined;
     }
 
+    // Bump to MRU end. Map iteration order is insertion order, so re-inserting
+    // moves this key to the back of the LRU list.
+    this.cache.delete(key);
+    this.cache.set(key, entry);
     return entry.value;
   }
 
   set(key: string, value: T, ttlMs: number): void {
-    this.cache.set(key, {
-      value,
-      expires: Date.now() + ttlMs,
-    });
+    // Re-inserting an existing key would otherwise keep it in its old LRU
+    // slot; delete-then-set bumps it to the MRU end.
+    if (this.cache.has(key)) this.cache.delete(key);
+    this.cache.set(key, { value, expires: Date.now() + ttlMs });
+
+    while (this.cache.size > this.maxEntries) {
+      const oldest = this.cache.keys().next().value;
+      if (oldest === undefined) break;
+      this.cache.delete(oldest);
+    }
   }
 
   has(key: string): boolean {
@@ -42,6 +68,11 @@ class TTLCache<T> {
 
   clear(): void {
     this.cache.clear();
+  }
+
+  /** Current entry count — exposed for tests and observability, not for caller use. */
+  size(): number {
+    return this.cache.size;
   }
 
   private cleanup(): void {
@@ -61,6 +92,8 @@ class TTLCache<T> {
     this.cache.clear();
   }
 }
+
+export { TTLCache };
 
 export const CACHE_TTL = {
   SUMMARY: 10 * 60 * 1000,

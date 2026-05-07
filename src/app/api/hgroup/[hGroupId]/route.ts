@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { summaryCache, CACHE_TTL, HTTP_CACHE_MAX_AGE, cachedQuery } from '@/lib/cache';
 import { getHGroupDetail } from '@/lib/queries';
+import { isReasonableId } from '@/lib/validate';
 
 // Public read-only API per TRICYP_SPEC §11. Mirrors the family route's
 // envelope shape: { success, data, error }.
@@ -11,7 +12,7 @@ export async function GET(
   const { hGroupId: raw } = await params;
   const hGroupId = decodeURIComponent(raw);
 
-  if (!hGroupId) {
+  if (!isReasonableId(hGroupId)) {
     return NextResponse.json(
       { success: false, error: { code: 'INVALID_ID', message: 'Invalid H-group ID' } },
       { status: 400 },

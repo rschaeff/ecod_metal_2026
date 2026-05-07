@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { familyCache, CACHE_TTL, HTTP_CACHE_MAX_AGE, cachedQuery } from '@/lib/cache';
 import { getFamilyInfo, getFamilyDomains } from '@/lib/queries';
+import { isReasonableId } from '@/lib/validate';
 
 export async function GET(
   request: NextRequest,
@@ -8,7 +9,7 @@ export async function GET(
 ) {
   const { fGroupId } = await params;
 
-  if (!fGroupId) {
+  if (!isReasonableId(fGroupId)) {
     return NextResponse.json(
       { success: false, error: { code: 'INVALID_ID', message: 'Invalid family group ID' } },
       { status: 400 }

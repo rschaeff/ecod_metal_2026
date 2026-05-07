@@ -2,9 +2,18 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { rateLimit, rateLimitHeaders } from '@/lib/rateLimit';
 
 export const config = {
-  // Apply only to /api/* (REST surface). Static asset routes and the rest of
-  // the app are unaffected.
-  matcher: ['/api/:path*'],
+  // Rate-limit the public REST API plus the dynamic page routes that hit the
+  // same DB-backed query / cache layer. Static pages (/, /about, /benchmark,
+  // /downloads, /paper, etc.) don't take user-controlled IDs, so they're
+  // exempt. Without page coverage an attacker could flood /h-group/<rand>
+  // and bypass the API-only limit.
+  matcher: [
+    '/api/:path*',
+    '/h-group/:path*',
+    '/family/:path*',
+    '/x-group/:path*',
+    '/domain/:path*',
+  ],
 };
 
 function clientIp(req: NextRequest): string {

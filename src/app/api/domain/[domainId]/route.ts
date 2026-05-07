@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
 import { domainCache, CACHE_TTL, HTTP_CACHE_MAX_AGE, cachedQuery } from '@/lib/cache';
 import { getDomainDetail, getDomainClassifications, getDomainEvidence } from '@/lib/queries';
+import { isReasonableId } from '@/lib/validate';
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ domainId: string }> }
 ) {
   const { domainId } = await params;
+
+  if (!isReasonableId(domainId)) {
+    return NextResponse.json(
+      { success: false, error: { code: 'INVALID_ID', message: 'Invalid domain ID' } },
+      { status: 400 },
+    );
+  }
 
   try {
     const domainInfo = await cachedQuery(
