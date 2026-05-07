@@ -65,6 +65,22 @@ PGPASSWORD="$DST_PASSWORD" psql \
    CREATE SCHEMA IF NOT EXISTS ecod_rep;
    CREATE SCHEMA IF NOT EXISTS cys_classification;"
 
+# Pre-clean: drop the schemas dependent on ecod_commons (in FK order)
+# before any --clean dumps run. pg_dump's per-schema dumps don't topo-sort
+# cross-schema drops, so step [4/5]'s 'DROP CONSTRAINT domains_pkey' fails
+# when cys_classification FKs still reference it. Dropping cys_classification
+# (and ecod_rep, which depends on public types we recreate in step [1/5])
+# up front lets the per-schema --clean steps run on a tabula rasa. Each
+# step's dump then recreates everything it owns.
+echo "Pre-clean: dropping cys_classification + ecod_rep (CASCADE) so per-schema --clean works"
+PGPASSWORD="$DST_PASSWORD" psql \
+  --host="$DST_HOST" --port="$DST_PORT" --username="$DST_USER" \
+  --dbname="$DST_DB" --quiet --no-psqlrc -c \
+  "DROP SCHEMA IF EXISTS cys_classification CASCADE;
+   DROP SCHEMA IF EXISTS ecod_rep           CASCADE;
+   CREATE SCHEMA cys_classification;
+   CREATE SCHEMA ecod_rep;"
+
 run_psql() {
   PGPASSWORD="$DST_PASSWORD" psql \
     --host="$DST_HOST" --port="$DST_PORT" --username="$DST_USER" \
