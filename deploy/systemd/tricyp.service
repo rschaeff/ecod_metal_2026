@@ -1,0 +1,26 @@
+[Unit]
+Description=TriCyp Next.js standalone server
+After=network.target
+
+[Service]
+Type=simple
+User=rschaeff
+Group=ecod
+WorkingDirectory=/data/ecod/tricyp/.next/standalone
+EnvironmentFile=/data/ecod/tricyp/.env.local
+# Next.js standalone bundles its own minimal server.js. The static
+# assets and `public/` need to be symlinked or copied next to it
+# before first start; see DEPLOY.md.
+ExecStart=/home/rschaeff/.local/bin/node server.js
+Restart=on-failure
+RestartSec=5
+
+# Hardening — relax if the app needs to write to disk for cache etc.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/data/ecod/tricyp/public/data
+ProtectHome=read-only
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
