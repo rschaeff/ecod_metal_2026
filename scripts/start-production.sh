@@ -2,8 +2,13 @@
 # Start TriCyp Next.js app in production mode on sangala.
 # Mirrors ~/dev/ecod_frontpage_2026/scripts/start-production.sh.
 # Usage: ./scripts/start-production.sh [start|stop|restart|status]
+#
+# This file is a TEMPLATE — scripts/deploy.sh installs a copy at
+# $PROD_DIR/start.sh and rewrites APP_DIR to the prod path. The
+# in-tree value below is just a placeholder so the script is
+# parseable; it isn't expected to run in dev.
 
-APP_DIR="/data/ECOD/html/tricyp_app"
+APP_DIR="/home/rschaeff/dev/ecod_metal_2026"
 PID_FILE="$APP_DIR/.next-server.pid"
 LOG_FILE="$APP_DIR/logs/production.log"
 PORT=3003
@@ -31,7 +36,9 @@ start() {
     fi
 
     echo "Starting TriCyp production server on port $PORT..."
-    cd "$APP_DIR/.next/standalone"
+    # After deploy.sh, the standalone bundle is flattened: server.js
+    # lives at $APP_DIR/server.js (not $APP_DIR/.next/standalone/server.js).
+    cd "$APP_DIR"
     HOSTNAME=0.0.0.0 PORT="$PORT" nohup node server.js > "$LOG_FILE" 2>&1 &
     echo $! > "$PID_FILE"
     sleep 2
