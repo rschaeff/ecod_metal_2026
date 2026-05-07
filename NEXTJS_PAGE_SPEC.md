@@ -27,7 +27,12 @@ Build a Next.js page (or set of pages) that lets a researcher browse and explore
 
 ## Database
 
-PostgreSQL on `dione:45000`, database `ecod_protein`, user `ecod`, password `***REDACTED***`.
+PostgreSQL on `dione:45000`, database `ecod_protein`, user `ecod`. The
+password is **not** committed to this repo — it's set out-of-band via
+`PGPASSWORD` or `.env.local` (gitignored). An earlier revision of this
+paragraph included the literal password and was pushed to a public
+remote in commit `1947dfd`; treat that credential as compromised and
+rotate.
 
 Two schemas are relevant:
 
