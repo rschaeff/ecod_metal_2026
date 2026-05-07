@@ -75,7 +75,12 @@ export default function Fig3CPanel({ taxonomy }: Fig3CPanelProps) {
           }}
           style={{ cursor: 'pointer' }}
         >
-          <XAxis type="number" domain={[0, 100]} tickFormatter={(v: number) => `${v}%`} />
+          <XAxis
+            type="number"
+            domain={[0, 100]}
+            ticks={[0, 25, 50, 75, 100]}
+            tickFormatter={(v: number) => `${Math.round(v)}%`}
+          />
           <YAxis type="category" dataKey="kingdom" width={90} />
           <Tooltip formatter={(value: number, name: string) => [`${value.toFixed(1)}%`, name]} />
           <Legend />
