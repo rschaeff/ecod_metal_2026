@@ -642,22 +642,36 @@
         color: { r: 234, g: 88, b: 12 },  // orange-600
       }));
 
+      // Each CYS gets a ball-and-stick representation in addition to recoloring
+      // the cartoon trace. Without the explicit representation, visual.select()
+      // only repaints the backbone ribbon — cysteine side chains aren't drawn
+      // and the site colors are invisible on the cartoon. representationColor
+      // paints the atoms; sideChain=true ensures the Cβ/Sγ atoms render.
       const cysSelections = [
         // free-thiol first → disulfide → metal so brighter colors win on overlap
         ...freeThiolCysteines.map(c => ({
           auth_asym_id: c.chain,
           auth_residue_number: c.resnum,
           color: CYS_COLOR.freeThiol,
+          representation: 'ball-and-stick',
+          representationColor: CYS_COLOR.freeThiol,
+          sideChain: true,
         })),
         ...disulfideCysteines.map(c => ({
           auth_asym_id: c.chain,
           auth_residue_number: c.resnum,
           color: CYS_COLOR.disulfide,
+          representation: 'ball-and-stick',
+          representationColor: CYS_COLOR.disulfide,
+          sideChain: true,
         })),
         ...metalCysteines.map(c => ({
           auth_asym_id: c.chain,
           auth_residue_number: c.resnum,
           color: CYS_COLOR.metal,
+          representation: 'ball-and-stick',
+          representationColor: CYS_COLOR.metal,
+          sideChain: true,
         })),
       ];
 
@@ -695,9 +709,27 @@
             color: { r: 234, g: 88, b: 12 },
           }));
           const structCysSelections = [
-            ...freeThiolCysteines.map(c => ({ struct_asym_id: c.chain, residue_number: c.resnum, color: CYS_COLOR.freeThiol })),
-            ...disulfideCysteines.map(c => ({ struct_asym_id: c.chain, residue_number: c.resnum, color: CYS_COLOR.disulfide })),
-            ...metalCysteines.map(c => ({ struct_asym_id: c.chain, residue_number: c.resnum, color: CYS_COLOR.metal })),
+            ...freeThiolCysteines.map(c => ({
+              struct_asym_id: c.chain, residue_number: c.resnum,
+              color: CYS_COLOR.freeThiol,
+              representation: 'ball-and-stick',
+              representationColor: CYS_COLOR.freeThiol,
+              sideChain: true,
+            })),
+            ...disulfideCysteines.map(c => ({
+              struct_asym_id: c.chain, residue_number: c.resnum,
+              color: CYS_COLOR.disulfide,
+              representation: 'ball-and-stick',
+              representationColor: CYS_COLOR.disulfide,
+              sideChain: true,
+            })),
+            ...metalCysteines.map(c => ({
+              struct_asym_id: c.chain, residue_number: c.resnum,
+              color: CYS_COLOR.metal,
+              representation: 'ball-and-stick',
+              representationColor: CYS_COLOR.metal,
+              sideChain: true,
+            })),
           ];
 
           viewerInstance.visual.select({

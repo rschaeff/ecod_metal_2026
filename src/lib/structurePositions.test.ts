@@ -50,6 +50,16 @@ describe('parseRangeDefinition', () => {
       { chain: 'A', start: 80, end: 150 },
     ]);
   });
+
+  it('accepts chainless form used by AFDB-source ECOD domains', () => {
+    expect(parseRangeDefinition('6-55')).toEqual([
+      { chain: 'A', start: 6, end: 55 },
+    ]);
+    expect(parseRangeDefinition('1-70,169-344')).toEqual([
+      { chain: 'A', start: 1, end: 70 },
+      { chain: 'A', start: 169, end: 344 },
+    ]);
+  });
 });
 
 describe('mapPositionToStructure', () => {

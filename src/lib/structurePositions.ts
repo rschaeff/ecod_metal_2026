@@ -21,8 +21,11 @@ export interface StructureCys {
 }
 
 /**
- * Parse "A:5-150" or "A:5-50,A:80-150" into segments. Returns an empty
- * array on any parse failure so callers can no-op gracefully.
+ * Parse "A:5-150" or "A:5-50,A:80-150" into segments. Also accepts the
+ * chainless form "5-150" used by AFDB-source ECOD domains and defaults
+ * the chain to 'A' (AlphaFold mmCIF models always use chain A as both
+ * auth_asym_id and label_asym_id). Returns an empty array on any parse
+ * failure so callers can no-op gracefully.
  */
 export function parseRangeDefinition(range: string | null | undefined): RangeSegment[] {
   if (!range) return [];
@@ -30,9 +33,9 @@ export function parseRangeDefinition(range: string | null | undefined): RangeSeg
   for (const rawPart of range.split(',')) {
     const part = rawPart.trim();
     if (!part) continue;
-    const m = part.match(/^([A-Za-z0-9]+):(-?\d+)-(-?\d+)$/);
+    const m = part.match(/^(?:([A-Za-z0-9]+):)?(-?\d+)-(-?\d+)$/);
     if (!m) return [];
-    const chain = m[1];
+    const chain = m[1] ?? 'A';
     const start = parseInt(m[2], 10);
     const end = parseInt(m[3], 10);
     if (isNaN(start) || isNaN(end) || end < start) return [];

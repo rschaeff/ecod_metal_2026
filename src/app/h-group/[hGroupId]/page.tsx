@@ -210,6 +210,7 @@ export default async function HGroupDetailPage({ params }: HGroupPageProps) {
                 domainId={pdbRep.domainId}
                 metalCysteines={encodeCysList(pdbHighlights?.metal ?? [])}
                 disulfideCysteines={encodeCysList(pdbHighlights?.disulfide ?? [])}
+                freeThiolCysteines={encodeCysList(pdbHighlights?.freeThiol ?? [])}
                 className="w-full h-80"
               />
             ) : (
@@ -250,6 +251,7 @@ export default async function HGroupDetailPage({ params }: HGroupPageProps) {
                 domainId={afdbRep.domainId}
                 metalCysteines={encodeCysList(afdbHighlights?.metal ?? [])}
                 disulfideCysteines={encodeCysList(afdbHighlights?.disulfide ?? [])}
+                freeThiolCysteines={encodeCysList(afdbHighlights?.freeThiol ?? [])}
                 className="w-full h-80"
               />
             ) : (
