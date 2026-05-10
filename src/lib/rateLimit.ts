@@ -3,11 +3,16 @@
 // load balancer with multiple replicas, swap this for a shared store
 // (Redis/Upstash) so the window is consistent across instances.
 //
-// Defaults: 100 requests per 60-second window. Tunable via env:
-//   TRICYP_API_RATE_LIMIT     integer requests per window (default 100)
+// Defaults: 300 requests per 60-second window. Tunable via env:
+//   TRICYP_API_RATE_LIMIT     integer requests per window (default 300)
 //   TRICYP_API_RATE_WINDOW_MS milliseconds in the window (default 60_000)
+//
+// 300/min comfortably covers an active researcher clicking through pages
+// and firing search-as-you-type, while still being well below what a
+// determined attacker can sustain — it's a defense in depth alongside the
+// LRU cache cap and per-route input length validation.
 
-const DEFAULT_LIMIT = 100;
+const DEFAULT_LIMIT = 300;
 const DEFAULT_WINDOW_MS = 60_000;
 const CLEANUP_THRESHOLD = 10_000; // prune buckets when the map gets this big
 
