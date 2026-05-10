@@ -27,7 +27,25 @@ function clientIp(req: NextRequest): string {
   return 'local';
 }
 
+// Next.js viewport-prefetches every visible <Link> on render. A single user
+// landing on /family or /h-group fans out into 50+ RSC prefetches against
+// /family/[id], /h-group/[id], etc. Counting those against the per-IP rate
+// limit was eating budget after a couple of real clicks. Prefetches set the
+// 'next-router-prefetch' (or '-segment-prefetch') request header, so we use
+// that as an exemption signal — they still hit the DB, but the LRU cache cap
+// and per-route input length checks bound their cost. Caveat: the header is
+// client-spoofable, so this is a defense-in-depth weakening; acceptable for
+// an unauthenticated public site.
+function isPrefetch(req: NextRequest): boolean {
+  return (
+    req.headers.has('next-router-prefetch') ||
+    req.headers.has('next-router-segment-prefetch')
+  );
+}
+
 export function middleware(req: NextRequest) {
+  if (isPrefetch(req)) return NextResponse.next();
+
   const ip = clientIp(req);
   const result = rateLimit(`api:${ip}`);
   const headers = rateLimitHeaders(result);
