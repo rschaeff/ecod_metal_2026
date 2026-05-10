@@ -80,36 +80,80 @@ export default async function DomainPage({ params }: DomainPageProps) {
         <span className="text-gray-900 dark:text-gray-100">{domainInfo.domainId}</span>
       </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content (2/3) */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Domain Header */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{domainInfo.domainId}</h1>
-            <div className="mt-2 grid grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
-              <div>
-                <span className="font-medium">Source:</span> {domainInfo.sourceType.toUpperCase()}
-              </div>
-              {domainInfo.pdbId && (
-                <div>
-                  <span className="font-medium">PDB:</span>{' '}
-                  <a
-                    href={`https://www.rcsb.org/structure/${domainInfo.pdbId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-amber-600 dark:text-amber-400 hover:underline"
-                  >
-                    {domainInfo.pdbId.toUpperCase()}
-                  </a>
-                  {domainInfo.chainId && ` chain ${domainInfo.chainId}`}
-                </div>
-              )}
-              <div><span className="font-medium">Range:</span> {domainInfo.rangeDefinition}</div>
-              <div><span className="font-medium">Length:</span> {domainInfo.sequence.length} residues</div>
-            </div>
+      {/* Domain Header — full width above the main grid */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{domainInfo.domainId}</h1>
+        <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 dark:text-gray-400">
+          <div>
+            <span className="font-medium">Source:</span> {domainInfo.sourceType.toUpperCase()}
           </div>
+          {domainInfo.pdbId && (
+            <div>
+              <span className="font-medium">PDB:</span>{' '}
+              <a
+                href={`https://www.rcsb.org/structure/${domainInfo.pdbId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-amber-600 dark:text-amber-400 hover:underline"
+              >
+                {domainInfo.pdbId.toUpperCase()}
+              </a>
+              {domainInfo.chainId && ` chain ${domainInfo.chainId}`}
+            </div>
+          )}
+          <div><span className="font-medium">Range:</span> {domainInfo.rangeDefinition}</div>
+          <div><span className="font-medium">Length:</span> {domainInfo.sequence.length} residues</div>
+        </div>
+      </div>
 
-          {/* Sequence + Evidence */}
+      {/* Structure viewer — full width, larger default size so users don't have to squint */}
+      {(domainInfo.pdbId || domainInfo.uniprotAcc) && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+          <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            3D structure ({domainInfo.sourceType.toUpperCase()})
+          </div>
+          {domainInfo.sourceType === 'pdb' && domainInfo.pdbId ? (
+            <StructureViewer
+              pdbId={domainInfo.pdbId}
+              chainId={domainInfo.chainId}
+              range={domainInfo.rangeDefinition}
+              domainId={domainInfo.domainId}
+              metalCysteines={metalCysParam}
+              disulfideCysteines={disulfideCysParam}
+              className="w-full h-[32rem]"
+            />
+          ) : domainInfo.uniprotAcc && afdbAvailable ? (
+            <StructureViewer
+              afId={domainInfo.uniprotAcc}
+              range={domainInfo.rangeDefinition}
+              domainId={domainInfo.domainId}
+              metalCysteines={metalCysParam}
+              disulfideCysteines={disulfideCysParam}
+              className="w-full h-[32rem]"
+            />
+          ) : domainInfo.uniprotAcc ? (
+            <div className="p-6 h-[32rem] flex flex-col items-center justify-center text-center text-sm text-gray-600 dark:text-gray-400">
+              <p className="font-medium text-gray-700 dark:text-gray-300">Structure unavailable</p>
+              <p className="mt-1 max-w-xs">
+                The AlphaFold model for{' '}
+                <a
+                  href={`https://www.uniprot.org/uniprotkb/${domainInfo.uniprotAcc}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono underline-offset-2 hover:underline text-amber-600 dark:text-amber-400"
+                >
+                  {domainInfo.uniprotAcc}
+                </a>{' '}
+                is not currently served by AFDB; the UniProt accession may be obsolete or merged.
+              </p>
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Content (2/3): sequence + per-cys evidence */}
+        <div className="lg:col-span-2 space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Sequence</h2>
             <DomainClient
@@ -123,51 +167,6 @@ export default async function DomainPage({ params }: DomainPageProps) {
 
         {/* Sidebar (1/3) */}
         <div className="space-y-6">
-          {/* Structure viewer */}
-          {(domainInfo.pdbId || domainInfo.uniprotAcc) && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                3D structure ({domainInfo.sourceType.toUpperCase()})
-              </div>
-              {domainInfo.sourceType === 'pdb' && domainInfo.pdbId ? (
-                <StructureViewer
-                  pdbId={domainInfo.pdbId}
-                  chainId={domainInfo.chainId}
-                  range={domainInfo.rangeDefinition}
-                  domainId={domainInfo.domainId}
-                  metalCysteines={metalCysParam}
-                  disulfideCysteines={disulfideCysParam}
-                  className="w-full h-72"
-                />
-              ) : domainInfo.uniprotAcc && afdbAvailable ? (
-                <StructureViewer
-                  afId={domainInfo.uniprotAcc}
-                  range={domainInfo.rangeDefinition}
-                  domainId={domainInfo.domainId}
-                  metalCysteines={metalCysParam}
-                  disulfideCysteines={disulfideCysParam}
-                  className="w-full h-72"
-                />
-              ) : domainInfo.uniprotAcc ? (
-                <div className="p-6 h-72 flex flex-col items-center justify-center text-center text-sm text-gray-600 dark:text-gray-400">
-                  <p className="font-medium text-gray-700 dark:text-gray-300">Structure unavailable</p>
-                  <p className="mt-1 max-w-xs">
-                    The AlphaFold model for{' '}
-                    <a
-                      href={`https://www.uniprot.org/uniprotkb/${domainInfo.uniprotAcc}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono underline-offset-2 hover:underline text-amber-600 dark:text-amber-400"
-                    >
-                      {domainInfo.uniprotAcc}
-                    </a>{' '}
-                    is not currently served by AFDB; the UniProt accession may be obsolete or merged.
-                  </p>
-                </div>
-              ) : null}
-            </div>
-          )}
-
           {/* Classification Summary */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Classification Summary</h2>
