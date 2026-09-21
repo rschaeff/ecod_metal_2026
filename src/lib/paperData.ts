@@ -14,28 +14,35 @@ export interface Fig3ASourceRow {
 
 // Paper Fig 3A: PDB-geom (geometric ground truth), PDB-ESM (PDB-source domains
 // classified by ESM2), AFDB-ESM (AFDB-source domains classified by ESM2).
-// Numbers from manuscript draft Fig 3A.
+// Numbers transcribed from the current manuscript Fig 3A / results.md.
+// nDomains is actually the cysteine count for the source stratum — kept under
+// the existing field name for backward compatibility with consumers.
+// Updated 2026-09-21 for the adopted retrain (p(Dis) >= 0.696, p(Met) >= 0.788).
+// The PDB-geom row is geometric and model-independent, but was also CORRECTED:
+// its previous 0.212 / 0.080 counted geometric annotations that were not
+// restricted to the 157,480 cysteines in the denominator. See
+// results/regen_2026-09-21/fig3_data_RETRAIN/PDB_GEOM_SETTLEMENT.md.
 export const FIG_3A: Fig3ASourceRow[] = [
   {
     source: 'PDB-geom',
     nDomains: 157_480,
-    freeThiolFrac: 0.668,
-    disulfideFrac: 0.241,
-    metalFrac: 0.091,
+    freeThiolFrac: 0.724,
+    disulfideFrac: 0.199,
+    metalFrac: 0.077,
   },
   {
     source: 'PDB-ESM',
     nDomains: 157_480,
-    freeThiolFrac: 0.741,
-    disulfideFrac: 0.187,
-    metalFrac: 0.072,
+    freeThiolFrac: 0.704,
+    disulfideFrac: 0.233,
+    metalFrac: 0.063,
   },
   {
     source: 'AFDB-ESM',
-    nDomains: 533_598,
-    freeThiolFrac: 0.785,
-    disulfideFrac: 0.157,
-    metalFrac: 0.058,
+    nDomains: 2_435_246,
+    freeThiolFrac: 0.762,
+    disulfideFrac: 0.161,
+    metalFrac: 0.078,
   },
 ];
 
@@ -54,9 +61,9 @@ export interface KingdomFractionRow {
 }
 
 export const FIG_3B: KingdomFractionRow[] = [
-  { kingdom: 'Eukaryota', domainPct: 55.0, cysteinePct: 74.1 },
-  { kingdom: 'Bacteria',  domainPct: 25.4, cysteinePct: 14.1 },
-  { kingdom: 'Archaea',   domainPct: 16.6, cysteinePct: 11.0 },
+  { kingdom: 'Eukaryota', domainPct: 55.6, cysteinePct: 74.8 },
+  { kingdom: 'Bacteria',  domainPct: 25.6, cysteinePct: 14.1 },
+  { kingdom: 'Archaea',   domainPct: 18.8, cysteinePct: 11.1 },
 ];
 
 // Caption is intentionally number-free — Fig3BPanel renders live percentages
@@ -82,15 +89,23 @@ export interface SubcellularRow {
   nDomains: number;
 }
 
+// Snapshot from the live getSubcellularDistribution query (paper-v1 scope:
+// run_id=1, source_type=afdb, eukaryotic, with uniprot_subcellular). Only
+// used as a fallback when the DB is unreachable; Fig3DPanel.tsx prefers
+// live rows. Refresh by running the query in src/lib/queries.ts and
+// transcribing results.
+// Updated 2026-09-21: adopted retrain, and recomputed against the current
+// uniprot_subcellular snapshot (284,478 accessions), which is why nDomains
+// moved as well. Fractions are per-cysteine; nDomains counts F70 domains.
 export const FIG_3D: SubcellularRow[] = [
-  { compartment: 'Extracellular',     disulfideFrac: 0.491, metalFrac: 0.024, nDomains: 28_140 },
-  { compartment: 'Plasma membrane',   disulfideFrac: 0.388, metalFrac: 0.041, nDomains: 22_910 },
-  { compartment: 'Endoplasmic ret.',  disulfideFrac: 0.353, metalFrac: 0.038, nDomains: 12_004 },
-  { compartment: 'Golgi',             disulfideFrac: 0.293, metalFrac: 0.046, nDomains:  6_882 },
-  { compartment: 'Lysosome',          disulfideFrac: 0.282, metalFrac: 0.037, nDomains:  3_117 },
-  { compartment: 'Cytoplasm',         disulfideFrac: 0.124, metalFrac: 0.078, nDomains: 71_550 },
-  { compartment: 'Nucleus',           disulfideFrac: 0.071, metalFrac: 0.118, nDomains: 49_088 },
-  { compartment: 'Mitochondrion',     disulfideFrac: 0.108, metalFrac: 0.142, nDomains: 18_245 },
+  { compartment: 'Extracellular',     disulfideFrac: 0.893, metalFrac: 0.002, nDomains: 14_105 },
+  { compartment: 'Plasma membrane',   disulfideFrac: 0.442, metalFrac: 0.014, nDomains: 17_846 },
+  { compartment: 'Endoplasmic ret.',  disulfideFrac: 0.202, metalFrac: 0.050, nDomains:  8_171 },
+  { compartment: 'Golgi',             disulfideFrac: 0.300, metalFrac: 0.033, nDomains:  6_478 },
+  { compartment: 'Lysosome',          disulfideFrac: 0.338, metalFrac: 0.049, nDomains:  1_363 },
+  { compartment: 'Cytoplasm',         disulfideFrac: 0.052, metalFrac: 0.082, nDomains: 36_335 },
+  { compartment: 'Nucleus',           disulfideFrac: 0.021, metalFrac: 0.176, nDomains: 48_707 },
+  { compartment: 'Mitochondrion',     disulfideFrac: 0.053, metalFrac: 0.052, nDomains:  9_943 },
 ];
 
 export const FIG_3D_CAPTION =
@@ -104,9 +119,9 @@ export const FIG_3D_CAPTION =
 export const PAPER_TOTALS = {
   domains: 691_078,
   cysteines: 2_706_778,
-  disulfide: 456_109,
-  metalBinding: 166_445,
-  freeThiol: 2_084_224,
+  disulfide: 461_306,
+  metalBinding: 168_171,
+  freeThiol: 2_077_301,
 } as const;
 
 // Data-version pin. Per TRICYP_SPEC "Open questions": the public site
@@ -304,11 +319,13 @@ export const FIG_S3_CAPTION =
 // Benchmark numbers (Fig 2 + Fig S1)
 // ----------------------------------------------------------------------------
 
-// Operating thresholds chosen on the held-out validation set (paper Methods).
-// These thresholds determine the published 3-state classification on F70 reps.
+// Operating thresholds: the F1 optima of the September 2026 retrain (weighted
+// cross-entropy alone, without focal loss or balanced sampling), adopted
+// 2026-09-21. These determine the published 3-state classification on F70 reps.
+// The previous ensemble used 0.742 / 0.972; the two are not interchangeable.
 export const BENCHMARK_THRESHOLDS = {
-  metalBinding: 0.972,
-  disulfide: 0.742,
+  metalBinding: 0.788,
+  disulfide: 0.696,
 } as const;
 
 // Fig S1: metal-type-stratified ROC. Iron-only is the prominent finding —

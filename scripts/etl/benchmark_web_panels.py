@@ -76,8 +76,8 @@ WEB_TOOL_NAME = {
 
 # Operating thresholds chosen on the held-out validation set, mirroring
 # src/lib/paperData.ts BENCHMARK_THRESHOLDS.
-OP_THRESHOLD_DISULFIDE = 0.742
-OP_THRESHOLD_METAL = 0.972
+OP_THRESHOLD_DISULFIDE = 0.696  # retrain-2026-09 F1 optimum
+OP_THRESHOLD_METAL = 0.788      # retrain-2026-09 F1 optimum
 
 # Single-panel figures: a square panel reads better at the dashboard
 # size the page requests them at than a wide panel does.

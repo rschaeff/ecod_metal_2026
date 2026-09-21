@@ -23,8 +23,8 @@
 -- consistent with the published classification call. The separate
 -- esm2_predictions_held_out_v1 table (dropped in migration 005) was an
 -- earlier inference whose probabilities disagreed with the classifications.
--- Rows where evidence='no_esm2' (structural-evidence-only calls) emit
--- empty probability cells.
+-- Rows where evidence='no_esm2' emitted empty probability cells; the September
+-- retrain scores every cysteine, so no such rows remain.
 \o :cys_out
 COPY (
   SELECT
@@ -41,7 +41,7 @@ COPY (
     p.source_type
   FROM cys_classification.cysteine_classifications cc
   JOIN cys_classification.esm2_run_domains rd
-       ON rd.domain_id = cc.domain_id AND rd.run_id = 1  -- paper-v1
+       ON rd.domain_id = cc.domain_id AND rd.run_id = 2  -- retrain-2026-09 (adopted)
   JOIN ecod_commons.domains d              ON cc.domain_id = d.id
   JOIN ecod_commons.proteins p             ON d.protein_id = p.id
   JOIN ecod_commons.f_group_assignments fa ON cc.domain_id = fa.domain_id
@@ -66,7 +66,7 @@ COPY (
     fa.x_group_id
   FROM cys_classification.domain_summary ds
   JOIN cys_classification.esm2_run_domains rd
-       ON rd.domain_id = ds.domain_id AND rd.run_id = 1  -- paper-v1
+       ON rd.domain_id = ds.domain_id AND rd.run_id = 2  -- retrain-2026-09 (adopted)
   JOIN ecod_commons.domains d              ON ds.domain_id = d.id
   JOIN ecod_commons.proteins p             ON d.protein_id = p.id
   JOIN ecod_commons.f_group_assignments fa ON ds.domain_id = fa.domain_id

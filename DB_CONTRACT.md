@@ -369,7 +369,7 @@ provenance question has an answer, the view definition is straightforward.
 **Answer: option (b).** `classification` is the ESM2-3state thresholded
 call regardless of source — confirmed empirically by 376 PDB-source
 cysteines that have both PDB SSBOND records and geometric disulfide
-bonds but are still `UNCLASSIFIED` because `P(Dis) < 0.742`. See §3.3
+bonds but are still `UNCLASSIFIED` because `P(Dis) < 0.696`. See §3.3
 for the structural-evidence-only `evidence_class` column added to
 carry the ground-truth axis, and the side-by-side diff between
 `hgroup_summary` and `hgroup_summary_struct`.

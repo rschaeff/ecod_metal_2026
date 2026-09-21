@@ -107,7 +107,7 @@ Each panel:
 
 Static page. Pipeline diagram (Fig 1), benchmark summary, model
 architecture, training data provenance, threshold rationale (Met ≥
-0.972, Dis ≥ 0.742). One paragraph each, with section anchors that
+0.788, Dis ≥ 0.696). One paragraph each, with section anchors that
 match the paper's Methods subheadings.
 
 Includes:

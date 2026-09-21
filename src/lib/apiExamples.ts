@@ -202,11 +202,11 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
         summary: {
           totalDomains: 691_078,
           totalCysteines: 2_706_778,
-          nDisulfide: 461_306,
-          nMetalBinding: 168_171,
-          nUnclassified: 2_077_301,
+          nDisulfide: 432_029,
+          nMetalBinding: 214_515,
+          nUnclassified: 2_060_234,
           pdbDomains: 48_048,
-          predictedDomains: 643_030,
+          predictedDomains: 620_758,
         },
         xGroups: [
           { xGroupId: '131', xGroupName: 'Example', nDisulfide: 1234, nMetal: 567,

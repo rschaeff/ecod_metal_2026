@@ -17,3 +17,10 @@ public/data/*.tsv
 public/data/*.sha256
 public/data/MANIFEST.sha256
 public/data/.generated-at
+
+# Deploy dump artefacts (deploy/dump-from-dione.sh output, ~700 MB).
+deploy/dump/
+
+# Local pre-change backups and Python caches.
+*.bak.pre-retrain
+__pycache__/
