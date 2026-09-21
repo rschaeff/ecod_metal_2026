@@ -17,19 +17,23 @@
 -- ---------- Fig 3B: domain fraction vs cysteine fraction by superkingdom ----------
 \echo 'fig3b_kingdom_fractions.csv ...'
 \o :fig3b_out
+-- Domain denominator = full F70 set via cluster_representatives (not
+-- just cys-bearing reps), matching the manuscript Fig 3B convention.
+-- cys aggregates LEFT JOIN domain_summary so cys-free reps contribute 0.
 COPY (
   WITH per_kingdom AS (
     SELECT pt.superkingdom,
-           count(DISTINCT ds.domain_id)              AS n_domains,
-           sum(ds.n_disulfide + ds.n_metal_binding + ds.n_unclassified) AS n_cys
-      FROM cys_classification.domain_summary ds
-      JOIN cys_classification.esm2_run_domains rd
-           ON rd.domain_id = ds.domain_id AND rd.run_id = 1
-      JOIN ecod_commons.domains  d ON ds.domain_id = d.id
+           count(DISTINCT cr.representative_domain_id)                                AS n_domains,
+           COALESCE(sum(ds.n_disulfide + ds.n_metal_binding + ds.n_unclassified), 0) AS n_cys
+      FROM ecod_commons.cluster_representatives cr
+      JOIN ecod_commons.domains  d ON cr.representative_domain_id = d.id
       JOIN ecod_commons.proteins p ON d.protein_id = p.id
       JOIN ecod_commons.protein_taxonomy pt
            ON p.source_id = pt.source_id AND p.source_type = pt.source_type
-     WHERE pt.superkingdom IN ('Eukaryota','Bacteria','Archaea')
+      LEFT JOIN cys_classification.domain_summary ds
+           ON ds.domain_id = cr.representative_domain_id
+     WHERE cr.parameter_set_name = 'F70'
+       AND pt.superkingdom IN ('Eukaryota','Bacteria','Archaea')
      GROUP BY pt.superkingdom
   ),
   totals AS (

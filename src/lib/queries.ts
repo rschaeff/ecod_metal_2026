@@ -166,18 +166,30 @@ export async function getSuperkingdomBreakdown(): Promise<SuperkingdomBreakdown[
     n_metal: string;
     n_unclassified: string;
   }>(
+    // Domain denominator = full F70 representative set (cys-bearing AND
+    // cys-free), matching the manuscript Fig 3B convention where
+    // "X% of F70 representative domains" is over the full F70 set, not
+    // just the cys-bearing subset. cys aggregates LEFT JOIN
+    // domain_summary so cys-free reps contribute 0 to all class counts.
+    //
+    // ecod_commons.cluster_representatives is a view over
+    // domain_clusters/clustering_runs/clustering_parameters (see
+    // deploy/dump-from-dione.sh's prereq-views.sql sidecar — the view
+    // is rebuilt on sangala from those underlying tables).
     `SELECT pt.superkingdom,
-            count(DISTINCT ds.domain_id)::text as n_domains,
+            count(DISTINCT cr.representative_domain_id)::text as n_domains,
             COALESCE(sum(ds.n_disulfide), 0)::text as n_disulfide,
             COALESCE(sum(ds.n_metal_binding), 0)::text as n_metal,
             COALESCE(sum(ds.n_unclassified), 0)::text as n_unclassified
-     FROM cys_classification.domain_summary ds
-     JOIN ecod_commons.domains d ON ds.domain_id = d.id
+     FROM ecod_commons.cluster_representatives cr
+     JOIN ecod_commons.domains d ON cr.representative_domain_id = d.id
      JOIN ecod_commons.proteins p ON d.protein_id = p.id
      JOIN ecod_commons.protein_taxonomy pt ON p.source_id = pt.source_id AND p.source_type = pt.source_type
-     WHERE pt.superkingdom IS NOT NULL AND pt.superkingdom != ''
+     LEFT JOIN cys_classification.domain_summary ds ON ds.domain_id = cr.representative_domain_id
+     WHERE cr.parameter_set_name = 'F70'
+       AND pt.superkingdom IS NOT NULL AND pt.superkingdom != ''
      GROUP BY pt.superkingdom
-     ORDER BY count(DISTINCT ds.domain_id) DESC`
+     ORDER BY count(DISTINCT cr.representative_domain_id) DESC`
   );
 
   return rows.map((r) => ({

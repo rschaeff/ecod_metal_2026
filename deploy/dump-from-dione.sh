@@ -135,6 +135,19 @@ SELECT pg_get_functiondef(p.oid) || ';'
    AND p.proname IN ('update_timestamp', 'update_version_stats')" \
   > "$FUNCS"
 
+VIEWS="$OUT_DIR/prereq-views.sql"
+echo "Pulling prereq ecod_commons views → $VIEWS"
+{
+  echo "-- ecod_commons views referenced by app code but not included"
+  echo "-- in the table-cherry-pick dump. Idempotent: drop then recreate."
+  echo "DROP VIEW IF EXISTS ecod_commons.cluster_representatives CASCADE;"
+  echo "CREATE VIEW ecod_commons.cluster_representatives AS"
+  PGPASSWORD="$SRC_PASSWORD" psql \
+    --host="$SRC_HOST" --port="$SRC_PORT" --username="$SRC_USER" \
+    --dbname="$SRC_DB" -t -A -c "
+SELECT pg_get_viewdef('ecod_commons.cluster_representatives'::regclass, true);"
+} > "$VIEWS"
+
 echo
 echo "Sizes:"
 ls -lh "$OUT_DIR"/*.sql.gz "$OUT_DIR"/*.sql 2>/dev/null

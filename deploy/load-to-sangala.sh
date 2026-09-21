@@ -34,7 +34,7 @@ if [[ -z "${DST_PASSWORD:-}" ]]; then
 fi
 
 # Verify all expected artefacts are present before we touch anything.
-for f in prereq-types.sql prereq-functions.sql \
+for f in prereq-types.sql prereq-functions.sql prereq-views.sql \
          tricyp-ecod_commons.sql.gz tricyp-ecod_rep.sql.gz \
          tricyp-cys_classification.sql.gz; do
   if [[ ! -f "$DUMP_DIR/$f" ]]; then
@@ -97,11 +97,14 @@ gunzip -c "$DUMP_DIR/tricyp-ecod_rep.sql.gz" \
 echo "[3/5] prereq-functions.sql"
 run_psql -f "$DUMP_DIR/prereq-functions.sql"
 
-echo "[4/5] ecod_commons cherry-picked tables"
+echo "[4/6] ecod_commons cherry-picked tables"
 gunzip -c "$DUMP_DIR/tricyp-ecod_commons.sql.gz" \
   | run_psql 2> "$DUMP_DIR/psql_load_ecod_commons.log"
 
-echo "[5/5] cys_classification schema (+ MVs)"
+echo "[5/6] prereq-views.sql (ecod_commons views over the loaded tables)"
+run_psql -f "$DUMP_DIR/prereq-views.sql"
+
+echo "[6/6] cys_classification schema (+ MVs)"
 gunzip -c "$DUMP_DIR/tricyp-cys_classification.sql.gz" \
   | run_psql 2> "$DUMP_DIR/psql_load_cys.log"
 
