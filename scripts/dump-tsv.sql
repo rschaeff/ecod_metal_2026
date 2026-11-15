@@ -38,7 +38,8 @@ COPY (
     fa.f_group_id,
     fa.h_group_id,
     fa.x_group_id,
-    p.source_type
+    p.source_type,
+    cc.heme_thioether  -- migration 007; c-type heme attachment motif or empty
   FROM cys_classification.cysteine_classifications cc
   JOIN cys_classification.esm2_run_domains rd
        ON rd.domain_id = cc.domain_id AND rd.run_id = 2  -- retrain-2026-09 (adopted)

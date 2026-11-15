@@ -38,9 +38,12 @@ export const BULK_DATA: DownloadEntry[] = [
       'h_group_id',
       'x_group_id',
       'source_type',
+      'heme_thioether',
     ],
     notes:
-      'Regenerated nightly via scripts/dump-tsv.sh. SHA-256 sidecar published alongside the file.',
+      'Regenerated nightly via scripts/dump-tsv.sh. SHA-256 sidecar published alongside the file. ' +
+      'heme_thioether is the CX(n)CH motif for c-type heme attachment cysteines (shown on the site as their own ' +
+      'class) and empty otherwise; classification keeps the model call.',
   },
   {
     id: 'domain-summary',

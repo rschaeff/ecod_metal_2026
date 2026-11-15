@@ -159,6 +159,16 @@ export default function AboutPage() {
           per-class probabilities for every cysteine remain in the
           per-cysteine TSV so users can re-threshold for their own workflows.
         </p>
+        <p className="mt-3 text-sm text-gray-700 dark:text-gray-300 max-w-3xl leading-relaxed">
+          <span className="font-medium">Heme thioether.</span> Cysteines in a c-type heme attachment motif
+          (CXXCH, CX<sub>3</sub>CH or CX<sub>4</sub>CH) inside the nine cytochrome H-groups where PDB structures show
+          these cysteines bonded to the heme are shown as a fourth class. They are covalently linked to the heme
+          by a thioether rather than coordinated to its iron, a state the three-state model has no class for.
+          Against PDB geometry the flag has 94% precision and 95% recall. The model call is kept in the
+          per-cysteine TSV (<code className="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded">classification</code>,
+          with the motif in <code className="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded">heme_thioether</code>),
+          and site-wide counts use the model call.
+        </p>
       </section>
 
       {/* Benchmarking */}

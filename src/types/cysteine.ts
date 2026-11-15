@@ -73,6 +73,9 @@ export interface CysteineRecord {
   classification: 'DISULFIDE' | 'METAL_BINDING' | 'UNCLASSIFIED';
   confidence: number;
   evidence: string;
+  // c-type heme attachment motif ('CX2CH' / 'CX3CH' / 'CX4CH') when the cysteine is flagged as a heme
+  // thioether (migration 007); null otherwise. `classification` keeps the model call.
+  hemeThioether: string | null;
 }
 
 export interface Esm2Prediction {

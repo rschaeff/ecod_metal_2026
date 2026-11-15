@@ -8,6 +8,7 @@
 // segments in declared order.
 
 import type { CysteineRecord } from '@/types/cysteine';
+import { displayClass } from '@/lib/displayClass';
 
 export interface RangeSegment {
   chain: string;
@@ -71,23 +72,31 @@ export function mapPositionToStructure(
  * lists. Useful for the StructureViewer cysteine-highlight params.
  */
 export function classifyCysteinesByStructure(
-  classifications: CysteineRecord[],
+  classifications: Pick<CysteineRecord, 'cysPosition' | 'classification' | 'hemeThioether'>[],
   rangeDefinition: string | null | undefined,
 ): {
   metal: StructureCys[];
   disulfide: StructureCys[];
   freeThiol: StructureCys[];
+  hemeThioether: StructureCys[];
 } {
   const segments = parseRangeDefinition(rangeDefinition);
-  const out = { metal: [] as StructureCys[], disulfide: [] as StructureCys[], freeThiol: [] as StructureCys[] };
+  const out = {
+    metal: [] as StructureCys[], disulfide: [] as StructureCys[], freeThiol: [] as StructureCys[],
+    hemeThioether: [] as StructureCys[],
+  };
   if (segments.length === 0) return out;
 
+  // Heme thioethers get their own list so they are never painted as metal or disulfide; the 3D viewer
+  // has no parameter for them yet, so the domain page leaves them unhighlighted.
   for (const c of classifications) {
     const mapped = mapPositionToStructure(c.cysPosition, segments);
     if (!mapped) continue;
-    if (c.classification === 'METAL_BINDING') out.metal.push(mapped);
-    else if (c.classification === 'DISULFIDE') out.disulfide.push(mapped);
-    else if (c.classification === 'UNCLASSIFIED') out.freeThiol.push(mapped);
+    const k = displayClass(c);
+    if (k === 'HEME_THIOETHER') out.hemeThioether.push(mapped);
+    else if (k === 'METAL_BINDING') out.metal.push(mapped);
+    else if (k === 'DISULFIDE') out.disulfide.push(mapped);
+    else if (k === 'UNCLASSIFIED') out.freeThiol.push(mapped);
   }
   return out;
 }

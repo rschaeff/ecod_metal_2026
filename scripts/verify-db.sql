@@ -246,6 +246,18 @@ FROM (
      AND evidence_class NOT IN ('STRUCT_DIS','STRUCT_MET','STRUCT_NEG')
 ) q;
 
+-- ---------- heme_thioether column (migration 007) ----------
+-- c-type heme attachment flag; the site shows flagged cysteines as their own display class.
+INSERT INTO verify_results
+SELECT 'column:cys_classification.cysteine_classifications.heme_thioether',
+       CASE WHEN EXISTS (
+         SELECT 1 FROM information_schema.columns
+         WHERE table_schema = 'cys_classification'
+           AND table_name = 'cysteine_classifications'
+           AND column_name = 'heme_thioether'
+       ) THEN 'PASS' ELSE 'MISSING' END,
+       'heme-thioether display class (domain page, sequence viewer, bulk TSV)';
+
 -- evidence_class population invariant: PDB-source rows must have a
 -- non-null evidence_class; non-PDB-source rows must have null.
 INSERT INTO verify_results

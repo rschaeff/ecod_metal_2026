@@ -1044,6 +1044,7 @@ export async function getDomainClassifications(domainDbId: number): Promise<Cyst
     classification: string;
     confidence: number;
     evidence: string;
+    heme_thioether?: string | null; // absent before migration 007
   }>(
     `SELECT * FROM cys_classification.cysteine_classifications
      WHERE domain_id = $1 ORDER BY cys_position`,
@@ -1057,6 +1058,7 @@ export async function getDomainClassifications(domainDbId: number): Promise<Cyst
     classification: r.classification as CysteineRecord['classification'],
     confidence: r.confidence,
     evidence: r.evidence,
+    hemeThioether: r.heme_thioether ?? null,
   }));
 }
 

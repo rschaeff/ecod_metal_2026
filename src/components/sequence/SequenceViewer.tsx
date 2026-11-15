@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { CysteineRecord } from '@/types/cysteine';
+import { displayClass, DISPLAY_LABELS, MODEL_LABELS, type DisplayClass } from '@/lib/displayClass';
 import {
   parseRangeDefinition,
   mapPositionToStructure,
@@ -17,16 +18,11 @@ interface SequenceViewerProps {
   rangeDefinition?: string | null;
 }
 
-const COLORS: Record<string, { bg: string; text: string }> = {
+const COLORS: Record<DisplayClass, { bg: string; text: string }> = {
   DISULFIDE: { bg: 'bg-red-200 dark:bg-red-800', text: 'text-red-900 dark:text-red-100' },
   METAL_BINDING: { bg: 'bg-green-200 dark:bg-green-800', text: 'text-green-900 dark:text-green-100' },
   UNCLASSIFIED: { bg: 'bg-gray-200 dark:bg-gray-600', text: 'text-gray-700 dark:text-gray-200' },
-};
-
-const CLASS_LABELS: Record<string, string> = {
-  DISULFIDE: 'Disulfide',
-  METAL_BINDING: 'Metal-binding',
-  UNCLASSIFIED: 'Free thiol',
+  HEME_THIOETHER: { bg: 'bg-amber-200 dark:bg-amber-800', text: 'text-amber-900 dark:text-amber-100' },
 };
 
 export default function SequenceViewer({ sequence, classifications, rangeDefinition }: SequenceViewerProps) {
@@ -64,7 +60,7 @@ export default function SequenceViewer({ sequence, classifications, rangeDefinit
       const record = classMap.get(pos);
 
       if (char === 'C' && record) {
-        const colors = COLORS[record.classification];
+        const colors = COLORS[displayClass(record)];
         const cysPos = record.cysPosition;
         lineChars.push(
           <span
@@ -137,6 +133,12 @@ export default function SequenceViewer({ sequence, classifications, rangeDefinit
           <span className="w-3 h-3 rounded-sm bg-gray-200 dark:bg-gray-600 inline-block" />
           Free thiol
         </span>
+        {classifications.some((c) => c.hemeThioether) && (
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-sm bg-amber-200 dark:bg-amber-800 inline-block" />
+            Heme thioether
+          </span>
+        )}
         <span className="ml-auto italic text-gray-400 dark:text-gray-500">
           Click any cysteine to focus it in the 3D viewer
         </span>
@@ -160,8 +162,13 @@ export default function SequenceViewer({ sequence, classifications, rangeDefinit
             })()}
           </p>
           <p className="text-gray-600 dark:text-gray-400">
-            Classification: <span className="font-medium">{CLASS_LABELS[tooltip.record.classification] ?? tooltip.record.classification}</span>
+            Classification: <span className="font-medium">{DISPLAY_LABELS[displayClass(tooltip.record)]}</span>
           </p>
+          {tooltip.record.hemeThioether && (
+            <p className="text-gray-600 dark:text-gray-400 text-xs">
+              {tooltip.record.hemeThioether} heme attachment site; model call: {MODEL_LABELS[tooltip.record.classification]}
+            </p>
+          )}
           <p className="text-gray-600 dark:text-gray-400">
             Confidence: {tooltip.record.confidence.toFixed(2)}
           </p>

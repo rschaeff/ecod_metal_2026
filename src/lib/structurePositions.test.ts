@@ -113,6 +113,7 @@ describe('classifyCysteinesByStructure', () => {
   const mkRecord = (
     cysPosition: number,
     classification: CysteineRecord['classification'],
+    hemeThioether: string | null = null,
   ): CysteineRecord => ({
     id: cysPosition,
     domainId: 0,
@@ -120,6 +121,7 @@ describe('classifyCysteinesByStructure', () => {
     classification,
     confidence: 1,
     evidence: '',
+    hemeThioether,
   });
 
   it('groups records by class with structure positions', () => {
@@ -140,7 +142,20 @@ describe('classifyCysteinesByStructure', () => {
       metal: [],
       disulfide: [],
       freeThiol: [],
+      hemeThioether: [],
     });
+  });
+
+  it('puts flagged heme thioethers in their own list, whatever the model call', () => {
+    const records = [
+      mkRecord(1, 'DISULFIDE', 'CX2CH'),
+      mkRecord(4, 'METAL_BINDING', 'CX2CH'),
+      mkRecord(10, 'DISULFIDE'),
+    ];
+    const result = classifyCysteinesByStructure(records, 'A:100-200');
+    expect(result.hemeThioether).toEqual([{ chain: 'A', resnum: 100 }, { chain: 'A', resnum: 103 }]);
+    expect(result.metal).toEqual([]);
+    expect(result.disulfide).toEqual([{ chain: 'A', resnum: 109 }]);
   });
 
   it('skips positions that fall outside declared segments', () => {
