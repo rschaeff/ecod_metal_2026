@@ -6,18 +6,21 @@ export const CLASS_COLORS = {
   disulfide: '#DC2626',
   metalBinding: '#16A34A',
   freeThiol: '#9CA3AF',
+  hemeThioether: '#D97706',
 } as const;
 
 export const CLASS_COLORS_DARK = {
   disulfide: '#F87171',
   metalBinding: '#4ADE80',
   freeThiol: '#6B7280',
+  hemeThioether: '#FBBF24',
 } as const;
 
 export const CLASS_LABELS = {
   disulfide: 'Disulfide',
   metalBinding: 'Metal-binding',
   freeThiol: 'Free thiol',
+  hemeThioether: 'Heme thioether',
 } as const;
 
 // For data series consumed by recharts where the key doubles as the legend label,

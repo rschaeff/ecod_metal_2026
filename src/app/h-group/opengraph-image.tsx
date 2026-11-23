@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 import { HGROUP_HIGHLIGHTS } from '@/lib/paperData';
 
 export const runtime = 'edge';
-export const alt = 'TriCyp H-group browser — Fig 5A,B confusion matrices';
+export const alt = 'TriCyp H-group browser — known vs predicted cysteine fractions per H-group';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -39,12 +39,12 @@ export default function HGroupOpengraphImage() {
             maxWidth: 1040,
           }}
         >
-          Browse H-groups by structurally-known vs ESM2-predicted cysteine fractions — paper Fig 5A,B confusion matrices.
+          Browse H-groups by structurally-known vs TriCyP-predicted cysteine fractions.
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'auto', gap: 16 }}>
           <span style={{ fontSize: 16, textTransform: 'uppercase', letterSpacing: 2, color: '#a16207' }}>
-            Candidate-novel metal-binding H-groups · Fig 5C–E
+            Novel metal-binding H-groups · Fig 5B–D
           </span>
           <div style={{ display: 'flex', gap: 32 }}>
             {highlights.map((h) => (

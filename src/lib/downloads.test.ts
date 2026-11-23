@@ -36,7 +36,7 @@ describe('downloads manifest', () => {
     for (const e of FIGURE_DATA) {
       expect(e.format).toBe('CSV');
       expect(e.paperFigure).toBeTruthy();
-      expect(e.paperFigure!.startsWith('Fig ')).toBe(true);
+      expect(/^(Fig \d|S\d+ Fig)/.test(e.paperFigure!)).toBe(true);
     }
   });
 

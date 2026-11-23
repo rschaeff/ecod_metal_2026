@@ -6,6 +6,7 @@ import CopyButton from '@/components/ui/CopyButton';
 import StructureViewer from '@/components/viewer/StructureViewer';
 import { PAPER_REF } from '@/lib/paperData';
 import { classifyCysteinesByStructure, encodeCysList } from '@/lib/structurePositions';
+import { displayClass, HEME_THIOETHER_NOTE } from '@/lib/displayClass';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,9 +58,11 @@ export default async function DomainPage({ params }: DomainPageProps) {
       ? await probeAfdbExists(domainInfo.uniprotAcc)
       : true;
 
-  const nDisulfide = classifications.filter((c) => c.classification === 'DISULFIDE').length;
-  const nMetal = classifications.filter((c) => c.classification === 'METAL_BINDING').length;
-  const nUnclassified = classifications.filter((c) => c.classification === 'UNCLASSIFIED').length;
+  // Counts by display class: flagged heme-thioether cysteines are their own class (see lib/displayClass.ts).
+  const nDisulfide = classifications.filter((c) => displayClass(c) === 'DISULFIDE').length;
+  const nMetal = classifications.filter((c) => displayClass(c) === 'METAL_BINDING').length;
+  const nUnclassified = classifications.filter((c) => displayClass(c) === 'UNCLASSIFIED').length;
+  const nHeme = classifications.filter((c) => displayClass(c) === 'HEME_THIOETHER').length;
 
   // Map domain-local cysteine positions to source-structure (chain, resnum)
   // pairs so the 3D viewer can paint them with the canonical site palette.
@@ -196,7 +199,19 @@ export default async function DomainPage({ params }: DomainPageProps) {
                 </span>
                 <span className="font-medium text-gray-500">{nUnclassified}</span>
               </div>
+              {nHeme > 0 && (
+                <div className="flex justify-between items-center" title={HEME_THIOETHER_NOTE}>
+                  <span className="flex items-center gap-2 text-sm">
+                    <span className="w-3 h-3 rounded-sm bg-amber-500 inline-block" />
+                    Heme thioether
+                  </span>
+                  <span className="font-medium text-amber-600 dark:text-amber-400">{nHeme}</span>
+                </div>
+              )}
             </div>
+            {nHeme > 0 && (
+              <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">{HEME_THIOETHER_NOTE}</p>
+            )}
           </div>
 
           {/* Cite this domain */}

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import SequenceViewer from '@/components/sequence/SequenceViewer';
 import EvidencePanel from '@/components/ui/EvidencePanel';
 import ClassificationBadge from '@/components/ui/ClassificationBadge';
+import { displayClass } from '@/lib/displayClass';
 import type { CysteineRecord, DomainEvidence } from '@/types/cysteine';
 
 interface DomainClientProps {
@@ -69,10 +70,10 @@ export default function DomainClient({ sequence, classifications, evidence, rang
 
       {/* Evidence Panels */}
       <div className="space-y-3">
-        {/* ESM2 Predictions */}
+        {/* TriCyP predictions */}
         {evidence.esm2Predictions.length > 0 && (
           <EvidencePanel
-            title="ESM2 3-State Predictions"
+            title="TriCyP 3-state predictions"
             count={evidence.esm2Predictions.length}
             defaultOpen
           >
@@ -110,7 +111,7 @@ export default function DomainClient({ sequence, classifications, evidence, rang
                         <ProbBar neg={p.negProb} dis={p.disProb} met={p.metProb} />
                       </td>
                       <td className="px-3 py-2">
-                        {cls && <ClassificationBadge classification={cls.classification} />}
+                        {cls && <ClassificationBadge classification={displayClass(cls)} />}
                       </td>
                     </tr>
                   );

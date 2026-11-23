@@ -24,7 +24,7 @@ export const BULK_DATA: DownloadEntry[] = [
     filename: 'cysteine-classifications.tsv',
     path: '/data/cysteine-classifications.tsv',
     description:
-      'Canonical full dump: one row per classified cysteine across all F70 representative domains, with three-state classification, ESM2-3state per-class probabilities, structural-evidence tags, and ECOD hierarchy.',
+      'Canonical full dump: one row per classified cysteine across all F70 representative domains, with three-state classification, TriCyP per-class probabilities, structural-evidence tags, and ECOD hierarchy.',
     format: 'TSV',
     schema: [
       'domain_id',
@@ -38,9 +38,12 @@ export const BULK_DATA: DownloadEntry[] = [
       'h_group_id',
       'x_group_id',
       'source_type',
+      'heme_thioether',
     ],
     notes:
-      'Regenerated nightly via scripts/dump-tsv.sh. SHA-256 sidecar published alongside the file.',
+      'Regenerated nightly via scripts/dump-tsv.sh. SHA-256 sidecar published alongside the file. ' +
+      'heme_thioether is the CX(n)CH motif for c-type heme attachment cysteines (shown on the site as their own ' +
+      'class) and empty otherwise; classification keeps the model call.',
   },
   {
     id: 'domain-summary',
@@ -68,7 +71,7 @@ export const BULK_DATA: DownloadEntry[] = [
     filename: 'hgroup-aggregates.tsv',
     path: '/data/hgroup-aggregates.tsv',
     description:
-      'Per-H-group aggregate underlying Fig 3C (per-kingdom rates) and Fig 5A,B (confusion matrices). One row per H-group.',
+      'Per-H-group aggregate behind the H-group browser (known vs predicted fractions; extends Fig 5). One row per H-group.',
     format: 'TSV',
     schema: [
       'h_group_id',
@@ -91,7 +94,7 @@ export const FIGURE_DATA: DownloadEntry[] = [
     id: 'fig3a',
     filename: 'fig3a_source_stratification.csv',
     path: '/data/figure_data/fig3a_source_stratification.csv',
-    description: 'Source-stratified cysteine fates: PDB-geom / PDB-ESM / AFDB-ESM × free-thiol / disulfide / metal-binding fractions.',
+    description: 'Source-stratified cysteine fates: PDB-geom / PDB-TriCyP / AFDB-TriCyP × free-thiol / disulfide / metal-binding fractions.',
     format: 'CSV',
     paperFigure: 'Fig 3A',
   },
@@ -123,7 +126,7 @@ export const FIGURE_DATA: DownloadEntry[] = [
     id: 'fig2',
     filename: 'fig2_benchmark.csv',
     path: '/data/figure_data/fig2_benchmark.csv',
-    description: 'ROC + PR curves and threshold-tuning data for ESM2-3state vs SSBONDPredict (disulfide) and vs LMetalSite / GPSite (metal-binding).',
+    description: 'ROC + PR curves and threshold-tuning data for TriCyP vs SSBONDPredict (disulfide) and vs LMetalSite / GPSite (metal-binding).',
     format: 'CSV',
     paperFigure: 'Fig 2',
   },
@@ -131,41 +134,49 @@ export const FIGURE_DATA: DownloadEntry[] = [
     id: 'figS1',
     filename: 'figS1_metal_stratification.csv',
     path: '/data/figure_data/figS1_metal_stratification.csv',
-    description: 'Metal-type-stratified ROC: shared-metals (Zn / Ca / Mg / Mn) and iron-only strata across ESM2-3state, LMetalSite, GPSite.',
+    description: 'Metal-type-stratified AUROC / AP: shared metals (Zn / Ca / Mg / Mn), iron, and iron cofactor strata across TriCyP, LMetalSite, GPSite.',
     format: 'CSV',
-    paperFigure: 'Fig S1',
+    paperFigure: 'S2 Fig',
   },
   {
     id: 'figS2',
     filename: 'figS2_source_breakdown.csv',
     path: '/data/figure_data/figS2_source_breakdown.csv',
-    description: 'Source-type breakdown across PDB / AFDB / Prodigal / UniParc.',
+    description: 'Classification by source type (PDB / AFDB / metagenomic EPP / UniParc); extends Fig 3A to all four sources.',
     format: 'CSV',
-    paperFigure: 'Fig S2',
+    paperFigure: 'Fig 3A (all sources)',
   },
   {
     id: 'figS3',
     filename: 'figS3_confidence_distribution.csv',
     path: '/data/figure_data/figS3_confidence_distribution.csv',
-    description: 'Distribution of max-class probability across all classified cysteines.',
+    description: 'Distribution of max-class probability across all classified cysteines (S4 Fig, panel A).',
     format: 'CSV',
-    paperFigure: 'Fig S3',
+    paperFigure: 'S4 Fig',
   },
   {
-    id: 'fig4',
-    filename: 'fig4_af_geometric.csv',
-    path: '/data/figure_data/fig4_af_geometric.csv',
-    description: 'AlphaFold geometric scanning vs PDB ground truth: distance distributions, recall, and PAE attenuation.',
+    id: 'fig4a',
+    filename: 'fig4a_sg_distances.csv',
+    path: '/data/figure_data/fig4a_sg_distances.csv',
+    description: 'Nearest-cysteine Sγ–Sγ distance histogram (0.1 Å bins) for predicted disulfide cysteines in PDB and AFDB domains.',
     format: 'CSV',
-    paperFigure: 'Fig 4',
+    paperFigure: 'Fig 4A',
+  },
+  {
+    id: 'fig4b',
+    filename: 'fig4b_partner_location.csv',
+    path: '/data/figure_data/fig4b_partner_location.csv',
+    description: 'Location of the nearest cysteine within 8 Å (same domain / same chain / other chain / none) in PDB biological assemblies.',
+    format: 'CSV',
+    paperFigure: 'Fig 4B',
   },
   {
     id: 'fig5ab',
     filename: 'fig5ab_hgroup_confusion.csv',
     path: '/data/figure_data/fig5ab_hgroup_confusion.csv',
-    description: 'H-group confusion-matrix data underlying Fig 5A (disulfide) and Fig 5B (metal-binding).',
+    description: 'Per-H-group known vs predicted disulfide and metal-binding fractions behind the H-group browser (extends Fig 5).',
     format: 'CSV',
-    paperFigure: 'Fig 5A,B',
+    paperFigure: 'Fig 5 (H-group browser)',
   },
 ];
 
@@ -181,17 +192,17 @@ export interface CodeArtefact {
 export const CODE_ARTEFACTS: CodeArtefact[] = [
   {
     id: 'cys3state',
-    label: 'cys3state predictor',
+    label: 'TriCyP predictor',
     description:
-      'Source for the ESM2-3state per-cysteine classifier, snapshotted at the paper-publication commit.',
-    externalUrl: 'https://github.com/rschaeff/cys3state',
-    zenodoUrl: undefined,
+      'Source for the TriCyP per-cysteine classifier (predict.py, train.py and the v3 weights); a snapshot is in the Zenodo record.',
+    externalUrl: 'https://github.com/conglab2020/tricyp',
+    zenodoUrl: 'https://doi.org/10.5281/zenodo.24328342',
   },
   {
     id: 'model-weights',
     label: 'Model weights (best_modelA.pth … best_modelE.pth)',
     description:
-      'Five fine-tuned ESM2 model checkpoints used by the published 3-state classifier. Not hosted on this site; deposited on Zenodo.',
-    zenodoUrl: undefined,
+      'The five TriCyP v3 classifier heads (1280 → 64 → 3 on frozen ESM2-650M embeddings) used by the published 3-state classification. Not hosted on this site; deposited on Zenodo.',
+    zenodoUrl: 'https://doi.org/10.5281/zenodo.24328342',
   },
 ];

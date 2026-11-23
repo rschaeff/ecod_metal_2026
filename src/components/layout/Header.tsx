@@ -6,7 +6,7 @@ import { useState } from 'react';
 import ThemeToggle from '../ui/ThemeToggle';
 import SearchBar from '../ui/SearchBar';
 
-// Logo links to '/', so 'Dashboard' is omitted. About + AF Geometric live in
+// Logo links to '/', so 'Dashboard' is omitted. About + Structural validation (Fig 4) live in
 // the footer to keep the top bar uncrowded — they are reachable from /paper.
 const navLinks = [
   { href: '/family', label: 'Browse' },

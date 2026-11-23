@@ -117,6 +117,7 @@ all F70 representative domains.
 | `classification` | `text` | every aggregate, dashboard, H-group browser | One of `'DISULFIDE'`, `'METAL_BINDING'`, `'UNCLASSIFIED'`. **See §5.1 for the open semantic question on PDB-source rows.** |
 | `confidence` | `numeric` | confidence histogram, domain detail | Max-class probability used for histogramming on the dashboard. |
 | `evidence` | `text` | domain detail tooltip | Free-form tag string (e.g. `"SSBOND"`, `"METAL_LINK:ZN"`, `"ESM2-Met"`). Surfaced verbatim in the SequenceViewer tooltip. |
+| `heme_thioether` | `text \| null` | domain detail, sequence viewer, bulk TSV | `'CX2CH'` / `'CX3CH'` / `'CX4CH'` for flagged c-type heme attachment cysteines, else null (migration 007). The site shows these as a fourth display class (`src/lib/displayClass.ts`); `classification` keeps the model call and every aggregate uses it. Optional for rendering: absent column = no flags. |
 
 ### 2.9 `cys_classification.domain_summary`
 

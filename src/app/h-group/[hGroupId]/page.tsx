@@ -120,7 +120,7 @@ export default async function HGroupDetailPage({ params }: HGroupPageProps) {
       <header className="mb-8">
         {highlight && (
           <p className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-1">
-            Paper {highlight.paperFigure} · candidate novel cysteine-chemistry H-group
+            Paper {highlight.paperFigure} · previously uncharacterized metal-binding H-group
           </p>
         )}
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
@@ -183,7 +183,7 @@ export default async function HGroupDetailPage({ params }: HGroupPageProps) {
               src={`/figures/${highlight.imageFilename}`}
               alt={`${highlight.paperFigure} — H-group ${detail.hGroupId} side-by-side`}
               label={`${highlight.paperFigure} · H-group ${detail.hGroupId}`}
-              description="Paper-figure rendering: ESM2-predicted metal-binding cysteines highlighted in magenta, sub-threshold cysteines in grey."
+              description="Paper-figure rendering: TriCyP-predicted metal-binding cysteines highlighted in magenta, sub-threshold cysteines in grey."
               className="w-full"
             />
           </div>

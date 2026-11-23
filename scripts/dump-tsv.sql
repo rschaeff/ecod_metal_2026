@@ -38,10 +38,11 @@ COPY (
     fa.f_group_id,
     fa.h_group_id,
     fa.x_group_id,
-    p.source_type
+    p.source_type,
+    cc.heme_thioether  -- migration 007; c-type heme attachment motif or empty
   FROM cys_classification.cysteine_classifications cc
   JOIN cys_classification.esm2_run_domains rd
-       ON rd.domain_id = cc.domain_id AND rd.run_id = 2  -- retrain-2026-09 (adopted)
+       ON rd.domain_id = cc.domain_id AND rd.run_id = 3  -- v3-2026-11 (adopted; same 691,078 domains as runs 1-2)
   JOIN ecod_commons.domains d              ON cc.domain_id = d.id
   JOIN ecod_commons.proteins p             ON d.protein_id = p.id
   JOIN ecod_commons.f_group_assignments fa ON cc.domain_id = fa.domain_id
@@ -66,7 +67,7 @@ COPY (
     fa.x_group_id
   FROM cys_classification.domain_summary ds
   JOIN cys_classification.esm2_run_domains rd
-       ON rd.domain_id = ds.domain_id AND rd.run_id = 2  -- retrain-2026-09 (adopted)
+       ON rd.domain_id = ds.domain_id AND rd.run_id = 3  -- v3-2026-11 (adopted; same 691,078 domains as runs 1-2)
   JOIN ecod_commons.domains d              ON ds.domain_id = d.id
   JOIN ecod_commons.proteins p             ON d.protein_id = p.id
   JOIN ecod_commons.f_group_assignments fa ON ds.domain_id = fa.domain_id

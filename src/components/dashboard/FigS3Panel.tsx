@@ -28,7 +28,7 @@ export default function FigS3Panel({ data }: FigS3PanelProps) {
 
   return (
     <PanelCard
-      title="ESM2 classification confidence"
+      title="TriCyP classification confidence"
       caption={FIG_S3_CAPTION}
       csvFilename="figS3_confidence_distribution.csv"
       csvRows={csvRows}

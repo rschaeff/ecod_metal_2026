@@ -38,7 +38,7 @@ export default function AboutOpengraphImage() {
             maxWidth: 1040,
           }}
         >
-          ESM2-3state fine-tuned on PDB-source cysteines with structural ground truth — published thresholds, ensemble inference, benchmarked against structure-aware baselines.
+          TriCyP: a small classifier on frozen ESM-2 embeddings, trained on PDB cysteines labelled by geometry — published thresholds, ensemble inference, benchmarked against structure-aware baselines.
         </div>
 
         <div style={{ display: 'flex', gap: 64, marginTop: 'auto', alignItems: 'baseline' }}>
