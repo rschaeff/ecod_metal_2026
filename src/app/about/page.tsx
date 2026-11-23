@@ -145,8 +145,8 @@ export default function AboutPage() {
           Threshold selection
         </h2>
         <p className="mt-3 text-sm text-gray-700 dark:text-gray-300 max-w-3xl leading-relaxed">
-          Operating thresholds were tuned on the held-out validation set to
-          hit a fixed per-task precision target. The published 3-state call
+          Each operating threshold is the F1 optimum for its class over all
+          216,277 held-out labelled cysteines, applied to the argmax class. The published 3-state call
           on TriCyp uses{' '}
           <code className="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded">
             P(Met) ≥ {BENCHMARK_THRESHOLDS.metalBinding}

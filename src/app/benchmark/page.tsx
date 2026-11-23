@@ -95,7 +95,7 @@ export default function BenchmarkPage() {
           the residual differences are entirely on iron coordination. */}
       <section className="mb-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-          Held-out evaluation · v2 (Apr 2026)
+          Held-out evaluation · v3 (Nov 2026)
         </p>
         <h2 className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-100">
           AUROC and average precision
@@ -320,8 +320,8 @@ export default function BenchmarkPage() {
             P(Dis) ≥ {BENCHMARK_THRESHOLDS.disulfide}
           </code>
           , and otherwise <span className="text-gray-700 dark:text-gray-300 font-medium">free thiol</span>.
-          The two thresholds were tuned independently to the same per-task
-          precision target on held-out data; raw probabilities for every
+          Each threshold is the F1 optimum for its class over all 216,277
+          held-out labelled cysteines, applied to the argmax class; raw probabilities for every
           cysteine remain available via the per-cysteine TSV download (see{' '}
           <span className="italic">Downloads</span>) so users can re-threshold
           for their own use case.

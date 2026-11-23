@@ -248,7 +248,7 @@ export const FIGURE_TO_SURFACE: FigureSurfaceEntry[] = [
   {
     figure: 'Fig S1',
     shortTitle: 'Iron-only ROC',
-    description: 'Metal-type-stratified ROC. The headline iron-only finding (ESM2 0.993 / LMetalSite 0.917 / GPSite 0.877).',
+    description: 'Metal-type-stratified ROC. The headline iron-only finding (ESM2 0.998 / LMetalSite 0.855 / GPSite 0.821).',
     href: '/benchmark#figS1',
     surfaceLabel: 'Benchmark',
     isMain: false,

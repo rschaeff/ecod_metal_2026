@@ -184,17 +184,17 @@ export interface CodeArtefact {
 export const CODE_ARTEFACTS: CodeArtefact[] = [
   {
     id: 'cys3state',
-    label: 'cys3state predictor',
+    label: 'TriCyP predictor',
     description:
-      'Source for the ESM2-3state per-cysteine classifier, snapshotted at the paper-publication commit.',
-    externalUrl: 'https://github.com/rschaeff/cys3state',
-    zenodoUrl: undefined,
+      'Source for the TriCyP per-cysteine classifier (predict.py, train.py and the v3 weights); a snapshot is in the Zenodo record.',
+    externalUrl: 'https://github.com/conglab2020/tricyp',
+    zenodoUrl: 'https://doi.org/10.5281/zenodo.24328342',
   },
   {
     id: 'model-weights',
     label: 'Model weights (best_modelA.pth … best_modelE.pth)',
     description:
-      'Five fine-tuned ESM2 model checkpoints used by the published 3-state classifier. Not hosted on this site; deposited on Zenodo.',
-    zenodoUrl: undefined,
+      'The five TriCyP v3 classifier heads (1280 → 64 → 3 on frozen ESM2-650M embeddings) used by the published 3-state classification. Not hosted on this site; deposited on Zenodo.',
+    zenodoUrl: 'https://doi.org/10.5281/zenodo.24328342',
   },
 ];
