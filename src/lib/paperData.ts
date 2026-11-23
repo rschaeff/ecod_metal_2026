@@ -17,11 +17,12 @@ export interface Fig3ASourceRow {
 // Numbers transcribed from the current manuscript Fig 3A / results.md.
 // nDomains is actually the cysteine count for the source stratum — kept under
 // the existing field name for backward compatibility with consumers.
-// Updated 2026-09-21 for the adopted retrain (p(Dis) >= 0.696, p(Met) >= 0.788).
-// The PDB-geom row is geometric and model-independent, but was also CORRECTED:
+// Updated 2026-11-23 for TriCyP v3 (p(Dis) >= 0.740, p(Met) >= 0.625, argmax-gated), from
+// revision/regen_runs/v3_final/l2/fig3/fig3A_by_source.tsv (the manuscript's Fig 3A source data).
+// The PDB-geom row is geometric and model-independent (unchanged since 2026-09-21, when it was CORRECTED:
 // its previous 0.212 / 0.080 counted geometric annotations that were not
 // restricted to the 157,480 cysteines in the denominator. See
-// results/regen_2026-09-21/fig3_data_RETRAIN/PDB_GEOM_SETTLEMENT.md.
+// results/regen_2026-09-21/fig3_data_RETRAIN/PDB_GEOM_SETTLEMENT.md).
 export const FIG_3A: Fig3ASourceRow[] = [
   {
     source: 'PDB-geom',
@@ -33,16 +34,16 @@ export const FIG_3A: Fig3ASourceRow[] = [
   {
     source: 'PDB-ESM',
     nDomains: 157_480,
-    freeThiolFrac: 0.704,
-    disulfideFrac: 0.233,
-    metalFrac: 0.063,
+    freeThiolFrac: 0.676,
+    disulfideFrac: 0.235,
+    metalFrac: 0.089,
   },
   {
     source: 'AFDB-ESM',
     nDomains: 2_435_246,
-    freeThiolFrac: 0.762,
-    disulfideFrac: 0.161,
-    metalFrac: 0.078,
+    freeThiolFrac: 0.743,
+    disulfideFrac: 0.160,
+    metalFrac: 0.097,
   },
 ];
 
@@ -53,7 +54,8 @@ export const FIG_3A_CAPTION =
   'representatives, respectively.';
 
 // Paper Fig 3B: domain fraction vs cysteine fraction by superkingdom.
-// Numbers (%) from manuscript draft.
+// Numbers (%) of the three superkingdoms; v3_final l2/fig3/fig3B_kingdom_shares.tsv (2026-11-23;
+// model-independent, moved only by the ECOD v294 hierarchy pin).
 export interface KingdomFractionRow {
   kingdom: string;       // 'Eukaryota' | 'Bacteria' | 'Archaea'
   domainPct: number;     // % of all classified domains
@@ -61,8 +63,8 @@ export interface KingdomFractionRow {
 }
 
 export const FIG_3B: KingdomFractionRow[] = [
-  { kingdom: 'Eukaryota', domainPct: 55.6, cysteinePct: 74.8 },
-  { kingdom: 'Bacteria',  domainPct: 25.6, cysteinePct: 14.1 },
+  { kingdom: 'Eukaryota', domainPct: 55.6, cysteinePct: 74.7 },
+  { kingdom: 'Bacteria',  domainPct: 25.7, cysteinePct: 14.2 },
   { kingdom: 'Archaea',   domainPct: 18.8, cysteinePct: 11.1 },
 ];
 
@@ -97,15 +99,17 @@ export interface SubcellularRow {
 // Updated 2026-09-21: adopted retrain, and recomputed against the current
 // uniprot_subcellular snapshot (284,478 accessions), which is why nDomains
 // moved as well. Fractions are per-cysteine; nDomains counts F70 domains.
+// Updated 2026-11-23: fractions for TriCyP v3 from v3_final l2/fig3/fig3D_subcellular.tsv
+// (same pinned subcellular snapshot); nDomains is model-independent and unchanged.
 export const FIG_3D: SubcellularRow[] = [
-  { compartment: 'Extracellular',     disulfideFrac: 0.893, metalFrac: 0.002, nDomains: 14_105 },
-  { compartment: 'Plasma membrane',   disulfideFrac: 0.442, metalFrac: 0.014, nDomains: 17_846 },
-  { compartment: 'Endoplasmic ret.',  disulfideFrac: 0.202, metalFrac: 0.050, nDomains:  8_171 },
-  { compartment: 'Golgi',             disulfideFrac: 0.300, metalFrac: 0.033, nDomains:  6_478 },
-  { compartment: 'Lysosome',          disulfideFrac: 0.338, metalFrac: 0.049, nDomains:  1_363 },
-  { compartment: 'Cytoplasm',         disulfideFrac: 0.052, metalFrac: 0.082, nDomains: 36_335 },
-  { compartment: 'Nucleus',           disulfideFrac: 0.021, metalFrac: 0.176, nDomains: 48_707 },
-  { compartment: 'Mitochondrion',     disulfideFrac: 0.053, metalFrac: 0.052, nDomains:  9_943 },
+  { compartment: 'Extracellular',     disulfideFrac: 0.890, metalFrac: 0.003, nDomains: 14_105 },
+  { compartment: 'Plasma membrane',   disulfideFrac: 0.440, metalFrac: 0.017, nDomains: 17_846 },
+  { compartment: 'Endoplasmic ret.',  disulfideFrac: 0.200, metalFrac: 0.053, nDomains:  8_171 },
+  { compartment: 'Golgi',             disulfideFrac: 0.298, metalFrac: 0.038, nDomains:  6_478 },
+  { compartment: 'Lysosome',          disulfideFrac: 0.330, metalFrac: 0.082, nDomains:  1_363 },
+  { compartment: 'Cytoplasm',         disulfideFrac: 0.052, metalFrac: 0.094, nDomains: 36_335 },
+  { compartment: 'Nucleus',           disulfideFrac: 0.020, metalFrac: 0.197, nDomains: 48_707 },
+  { compartment: 'Mitochondrion',     disulfideFrac: 0.055, metalFrac: 0.064, nDomains:  9_943 },
 ];
 
 export const FIG_3D_CAPTION =
@@ -114,14 +118,14 @@ export const FIG_3D_CAPTION =
   'compartments are metal-binding-rich. Source: UniProt Subcellular Location ' +
   'annotations cross-referenced to ECOD F70 representative domains.';
 
-// Stat strip headline numbers from the manuscript draft. The dashboard prefers
+// Stat strip headline numbers: TriCyP v3 catalogue (2026-11-23; = Zenodo 10.5281/zenodo.24328342). The dashboard prefers
 // live counts from the database but falls back to these when the DB query fails.
 export const PAPER_TOTALS = {
   domains: 691_078,
   cysteines: 2_706_778,
-  disulfide: 461_306,
-  metalBinding: 168_171,
-  freeThiol: 2_077_301,
+  disulfide: 430_871,
+  metalBinding: 278_096,
+  freeThiol: 1_997_811,
 } as const;
 
 // Data-version pin. Per TRICYP_SPEC "Open questions": the public site
@@ -319,13 +323,13 @@ export const FIG_S3_CAPTION =
 // Benchmark numbers (Fig 2 + Fig S1)
 // ----------------------------------------------------------------------------
 
-// Operating thresholds: the F1 optima of the September 2026 retrain (weighted
-// cross-entropy alone, without focal loss or balanced sampling), adopted
-// 2026-09-21. These determine the published 3-state classification on F70 reps.
-// The previous ensemble used 0.742 / 0.972; the two are not interchangeable.
+// Operating thresholds: the F1 optima of TriCyP v3 (QC's step22 ensemble, trained
+// on the corrected metal labels) on all 216,277 held-out labelled cysteines,
+// applied to the argmax class. Adopted 2026-11. Earlier releases used 0.696 / 0.788
+// (September 2026) and 0.742 / 0.972 (original); thresholds are not interchangeable.
 export const BENCHMARK_THRESHOLDS = {
-  metalBinding: 0.788,
-  disulfide: 0.696,
+  metalBinding: 0.625,
+  disulfide: 0.740,
 } as const;
 
 // Fig S1: metal-type-stratified ROC. Iron-only is the prominent finding —
@@ -343,10 +347,10 @@ export const BENCHMARK_IRON_ONLY_TEXT =
   'cysteine 3-state labels covering Fe / Fe-S / heme coordination; ' +
   'LMetalSite and GPSite were trained on Zn / Ca / Mg / Mn binding. On ' +
   'the metals all three tools share training coverage (Zn / Ca / Mg / ' +
-  'Mn) the AUROC values are essentially tied (0.994–0.996). The ' +
-  'difference shows up specifically on iron coordination, and ' +
-  'particularly on heme (ESM2 0.981 vs LMetalSite 0.838 vs GPSite ' +
-  '0.711) — a sub-domain the specialist tools were not designed for. ' +
+  'Mn) the AUROC values are essentially tied (0.996–0.999). The ' +
+  'difference shows up specifically on iron coordination (ESM2 0.998 ' +
+  'vs LMetalSite 0.855 vs GPSite 0.821), including heme (0.998 vs ' +
+  '0.853 vs 0.725) — a sub-domain the specialist tools were not designed for. ' +
   'Read the iron-stratum advantage as a coverage statement, not a ' +
   'head-to-head outperformance claim.';
 
@@ -365,8 +369,9 @@ export interface BenchmarkRow {
 // which is regenerated by scripts/etl/benchmark_web_panels.py at the same
 // time as the figures in public/figures/. The figure annotations and the
 // page text therefore always come from a single source — re-running the
-// script updates both. The JSON carries the v2 held-out benchmark
-// (48,659 proteins / 173,241 cysteines; benchmark_v2_protocol.md).
+// script updates both. Since 2026-11-23 the JSON carries the v3 benchmark
+// (39,482 proteins / 151,438 cysteines; scripts/etl/benchmark_web_panels_v3.py),
+// the evaluation set of the manuscript's Fig 2, S2 Fig and S2 Table.
 import benchmarkMetrics from './data/benchmark_metrics.json';
 
 interface RawBenchmarkMetric {
@@ -409,12 +414,11 @@ export const FIG_2_CAPTION =
 export const FIG_S1_CAPTION =
   'Metal-type-stratified ROC. On the metals all three tools were ' +
   'trained for (Zn / Ca / Mg / Mn), AUROC values are essentially tied ' +
-  '(0.994–0.996). The differences in the all-metals comparison are ' +
+  '(0.996–0.999). The differences in the all-metals comparison are ' +
   'entirely from the iron stratum (Fe-S clusters and heme), where ' +
-  'specialist tools were not designed to predict — heme is the worst ' +
-  'case for them (LMetalSite 0.838, GPSite 0.711 vs ESM2-3state 0.981). ' +
-  'The iron stratum is roughly 15% of held-out metal positives in the ' +
-  'v2 (zinc-rebalanced) benchmark.';
+  'specialist tools were not designed to predict (ESM2-3state 0.998, ' +
+  'LMetalSite 0.855, GPSite 0.821). Iron-coordinating cysteines are ' +
+  '12.7% of the metal positives in the benchmark (3,051 of 24,083).';
 
 // ----------------------------------------------------------------------------
 // H-group browser (Fig 5A,B) and detail (Fig 5C–E)
@@ -481,8 +485,9 @@ export const FIG_5AB_CAPTION =
   'representatives) versus ESM2-predicted cysteine fraction (all F70 ' +
   'representatives in the H-group). Cells in the lower-right quadrant — ' +
   'low structural evidence, high ESM2 prediction — flag candidate novel ' +
-  'cysteine-chemistry H-groups; the manuscript highlights 12 disulfide and ' +
-  '3 metal-binding such cells.';
+  'cysteine-chemistry H-groups; the manuscript identifies ten metal-binding ' +
+  'H-groups of this kind (at a ≥10-representative floor), two of them heme ' +
+  'cytochromes whose calls are heme-thioether cysteines.';
 
 // ----------------------------------------------------------------------------
 // AlphaFold geometric scanning (Fig 4)

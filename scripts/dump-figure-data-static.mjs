@@ -38,13 +38,13 @@ function writeCsv(filename, header, rows) {
 // ---------- Fig 3A: paper-frozen source-stratified rates ----------
 // Mirror of src/lib/paperData.ts FIG_3A. Update both together when the
 // manuscript publishes a refreshed Fig 3A.
-// Kept in sync with FIG_3A in src/lib/paperData.ts. Updated 2026-09-21 for the
-// adopted retrain; the PDB-geom row was also corrected (its 0.212 / 0.080 were
-// not restricted to the 157,480 cysteines in the denominator).
+// Kept in sync with FIG_3A in src/lib/paperData.ts. Updated 2026-11-23 for TriCyP v3
+// (0.740 / 0.625). The PDB-geom row is model-independent; it was corrected 2026-09-21
+// (its 0.212 / 0.080 were not restricted to the 157,480 cysteines in the denominator).
 const FIG_3A_ROWS = [
   { source: 'PDB-geom', nDomains: 157480, freeThiolFrac: 0.724, disulfideFrac: 0.199, metalFrac: 0.077 },
-  { source: 'PDB-ESM',  nDomains: 157480, freeThiolFrac: 0.704, disulfideFrac: 0.233, metalFrac: 0.063 },
-  { source: 'AFDB-ESM', nDomains: 2435246, freeThiolFrac: 0.762, disulfideFrac: 0.161, metalFrac: 0.078 },
+  { source: 'PDB-ESM',  nDomains: 157480, freeThiolFrac: 0.676, disulfideFrac: 0.235, metalFrac: 0.089 },
+  { source: 'AFDB-ESM', nDomains: 2435246, freeThiolFrac: 0.743, disulfideFrac: 0.160, metalFrac: 0.097 },
 ];
 writeCsv(
   'fig3a_source_stratification.csv',

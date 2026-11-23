@@ -132,12 +132,12 @@ export default function BenchmarkPage() {
           ))}
         </div>
         <p className="mt-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed max-w-3xl">
-          On the v2 (zinc-rebalanced) benchmark, all three metal-binding
-          tools score in the same band (AUROC 0.975–0.994) because most
-          held-out positives are zinc — a metal LMetalSite and GPSite
-          were trained on. Stratifying by metal type isolates where
+          On the v3 benchmark (39,482 proteins, 151,438 cysteines), all
+          three metal-binding tools score in the same band (AUROC
+          0.973–0.998) because most metal positives are zinc — a metal
+          LMetalSite and GPSite were trained on. Stratifying by metal type isolates where
           ESM2-3state actually differs: on the shared metals (Zn / Ca /
-          Mg / Mn) the AUROC values are essentially tied (0.994–0.996),
+          Mg / Mn) the AUROC values are essentially tied (0.996–0.999),
           and the residual difference in the all-metals number comes
           entirely from iron coordination — Fe-S clusters and especially
           heme — which the specialist tools were not designed to predict.
@@ -254,7 +254,7 @@ export default function BenchmarkPage() {
       {/* Tabular summary */}
       <PanelCard
         title="AUROC / AP per tool per stratum"
-        caption="Tabular summary of the held-out benchmark (v2, Apr 2026). All-metals AUROC + AP, the shared-metal subset (Zn/Ca/Mg/Mn), and the per-iron-cofactor strata (4Fe-4S, heme, 2Fe-2S/3Fe-4S) are all transcribed from the v2 protocol; per-stratum AP is not reported in the source and renders as em-dashes."
+        caption="Tabular summary of the TriCyP v3 benchmark (Nov 2026; 39,482 proteins, 151,438 cysteines). All-metals AUROC + AP, the shared-metal subset (Zn/Ca/Mg/Mn), the iron stratum and the per-iron-cofactor strata (4Fe-4S, heme, 2Fe-2S/3Fe-4S). TriCyP scores are held-out (each cysteine scored by the fold model that did not train on it)."
         csvFilename="benchmark_summary.csv"
         csvRows={benchmarkCsvRows}
       >

@@ -35,7 +35,7 @@ SELECT s.domain_id AS ecod_id, s.cys_position, s.motif, cc.id AS cc_id,
        substr(ds.sequence, s.cys_position, 1) AS residue
   FROM heme_stage s
   JOIN ecod_commons.domains d ON d.domain_id = s.domain_id
-  JOIN cys_classification.esm2_run_domains rd ON rd.domain_id = d.id AND rd.run_id = 2  -- retrain-2026-09 (adopted)
+  JOIN cys_classification.esm2_run_domains rd ON rd.domain_id = d.id AND rd.run_id = 3  -- v3-2026-11 (adopted; same 691,078 domains as runs 1-2)
   JOIN cys_classification.cysteine_classifications cc
        ON cc.domain_id = d.id AND cc.cys_position = s.cys_position
   LEFT JOIN ecod_commons.domain_sequences ds ON ds.domain_id = d.id;

@@ -182,10 +182,9 @@ export default function AboutPage() {
           <Link href="/benchmark" className="text-amber-600 dark:text-amber-400 hover:underline">
             Benchmark
           </Link>{' '}
-          page (paper Fig 2 + Fig S1). On the held-out v2 (zinc-rebalanced)
-          benchmark, all three metal-binding tools score in the same band
-          on the metals they were trained for (Zn / Ca / Mg / Mn,
-          AUROC 0.994–0.996); ESM2-3state&apos;s residual advantage shows
+          page (paper Fig 2 + S2 Fig). On the v3 benchmark, all three
+          metal-binding tools score in the same band on the metals they
+          were trained for (Zn / Ca / Mg / Mn, AUROC 0.996–0.999); ESM2-3state&apos;s residual advantage shows
           up specifically on iron coordination, where iron-stratum AUROC
           reaches{' '}
           <span className="font-mono font-semibold">{BENCHMARK_IRON_ONLY[0].auroc.toFixed(3)}</span>{' '}
