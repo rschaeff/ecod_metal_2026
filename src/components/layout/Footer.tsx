@@ -30,7 +30,7 @@ export default async function Footer() {
             </h3>
             <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
               Three-state cysteine classification across ECOD F70 representative domains —
-              disulfide-bonded, metal-binding, or free thiol — combining ESM2 predictions
+              disulfide-bonded, metal-binding, or free thiol — combining TriCyP predictions
               with PDB structural evidence.
             </p>
           </div>
@@ -62,7 +62,7 @@ export default async function Footer() {
               </li>
               <li>
                 <Link href="/af-geometric" className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400">
-                  AF Geometric
+                  Structural validation (Fig 4)
                 </Link>
               </li>
               <li>

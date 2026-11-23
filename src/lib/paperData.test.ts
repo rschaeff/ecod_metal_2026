@@ -45,8 +45,8 @@ describe('FIGURE_TO_SURFACE', () => {
     }
   });
 
-  it('points the highlighted Fig 5C/D/E rows at the matching detail page', () => {
-    const fig5 = FIGURE_TO_SURFACE.filter((f) => f.figure.startsWith('Fig 5C') || f.figure.startsWith('Fig 5D') || f.figure.startsWith('Fig 5E'));
+  it('points the highlighted Fig 5B/C/D rows at the matching detail page', () => {
+    const fig5 = FIGURE_TO_SURFACE.filter((f) => ['Fig 5B', 'Fig 5C', 'Fig 5D'].includes(f.figure));
     expect(fig5).toHaveLength(3);
     for (const row of fig5) {
       const id = row.href.replace(/^\/h-group\//, '');

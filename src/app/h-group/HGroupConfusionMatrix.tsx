@@ -30,7 +30,7 @@ function bin(s: HGroupSummary, task: Task): { known: number | null; predicted: n
 }
 
 // Spec calls out 12 disulfide / 3 metal candidate-novel cells. The
-// "novel quadrant" is structurally-known < 5% AND ESM2-predicted ≥ 95%.
+// "novel quadrant" is structurally-known < 5% AND TriCyP-predicted ≥ 95%.
 const NOVEL_KNOWN_BIN = 0;       // <5%
 const NOVEL_PREDICTED_BIN = 3;   // ≥95%
 
@@ -100,7 +100,7 @@ export default function HGroupConfusionMatrix({ summaries, task }: HGroupConfusi
                 colSpan={4}
                 className="p-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center"
               >
-                ESM2-predicted (AFDB-source)
+                TriCyP-predicted (AFDB-source)
               </th>
             </tr>
             <tr>
@@ -184,13 +184,13 @@ export default function HGroupConfusionMatrix({ summaries, task }: HGroupConfusi
             <span className="font-mono">{HGROUP_BIN_LABELS[selected!.row]}</span>{' '}
             structurally-known and{' '}
             <span className="font-mono">{HGROUP_BIN_LABELS[selected!.col]}</span>{' '}
-            ESM2-predicted {task === 'disulfide' ? 'disulfide' : 'metal-binding'} rate
+            TriCyP-predicted {task === 'disulfide' ? 'disulfide' : 'metal-binding'} rate
             {selected!.row === NOVEL_KNOWN_BIN && selected!.col === NOVEL_PREDICTED_BIN && (
               <span className="ml-2 inline-block px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-medium">
                 candidate novel cell
               </span>
             )}
-            . Sorted by ESM2-predicted fraction, descending.
+            . Sorted by TriCyP-predicted fraction, descending.
           </p>
           <div className="overflow-x-auto max-h-96">
             <table className="min-w-full text-sm">

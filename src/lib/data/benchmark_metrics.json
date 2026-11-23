@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-23T17:55:41Z",
+  "generated_at": "2026-11-23T18:39:16Z",
   "source": "scripts/etl/benchmark_web_panels_v3.py (TriCyP v3; bench_expanded.py evaluation set)",
   "evaluation_set": {
     "n_proteins": 39482,
@@ -9,7 +9,7 @@
   },
   "metrics": [
     {
-      "tool": "ESM2-3state",
+      "tool": "TriCyP",
       "task": "disulfide",
       "stratum": "all",
       "auroc": 0.9904,
@@ -27,7 +27,7 @@
       "n_total": 151438
     },
     {
-      "tool": "ESM2-3state",
+      "tool": "TriCyP",
       "task": "metal_binding",
       "stratum": "all",
       "auroc": 0.9977,
@@ -54,7 +54,7 @@
       "n_total": 151205
     },
     {
-      "tool": "ESM2-3state",
+      "tool": "TriCyP",
       "task": "metal_binding",
       "stratum": "shared_metals",
       "auroc": 0.9986,
@@ -81,7 +81,7 @@
       "n_total": 147786
     },
     {
-      "tool": "ESM2-3state",
+      "tool": "TriCyP",
       "task": "metal_binding",
       "stratum": "iron_only",
       "auroc": 0.9977,
@@ -108,7 +108,7 @@
       "n_total": 130179
     },
     {
-      "tool": "ESM2-3state",
+      "tool": "TriCyP",
       "task": "metal_binding",
       "stratum": "iron_4fe4s",
       "auroc": 0.999,
@@ -135,7 +135,7 @@
       "n_total": 129224
     },
     {
-      "tool": "ESM2-3state",
+      "tool": "TriCyP",
       "task": "metal_binding",
       "stratum": "iron_heme",
       "auroc": 0.9979,
@@ -162,7 +162,7 @@
       "n_total": 127266
     },
     {
-      "tool": "ESM2-3state",
+      "tool": "TriCyP",
       "task": "metal_binding",
       "stratum": "iron_2fe2s_3fe4s",
       "auroc": 0.9939,

@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'TriCyp benchmark — held-out ESM2-3state vs structure-template tools';
+export const alt = 'TriCyp benchmark — held-out TriCyP vs structure-template tools';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -44,25 +44,25 @@ export default function BenchmarkOpengraphImage() {
             maxWidth: 1040,
           }}
         >
-          Held-out comparison of ESM2-3state against SSBONDPredict, LMetalSite, and GPSite, with metal-type-stratified ROC.
+          Held-out comparison of TriCyP against SSBONDPredict, LMetalSite, and GPSite, with metal-type-stratified ROC.
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'auto', gap: 12 }}>
           <span style={{ fontSize: 16, textTransform: 'uppercase', letterSpacing: 2, color: '#525252' }}>
-            Paper Fig 2 + Fig S1
+            Paper Fig 2 + S2 Fig
           </span>
           <div style={{ display: 'flex', gap: 56, fontSize: 22, color: '#404040' }}>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: 14, color: '#737373', textTransform: 'uppercase', letterSpacing: 1.5 }}>
                 Disulfide
               </span>
-              <span>ESM2-3state · SSBONDPredict</span>
+              <span>TriCyP · SSBONDPredict</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: 14, color: '#737373', textTransform: 'uppercase', letterSpacing: 1.5 }}>
                 Metal-binding
               </span>
-              <span>ESM2-3state · LMetalSite · GPSite</span>
+              <span>TriCyP · LMetalSite · GPSite</span>
             </div>
           </div>
         </div>

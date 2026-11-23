@@ -31,6 +31,8 @@ wp.OUT_DIR = os.environ.get("OUT_DIR", WEB + "/public/figures")
 wp.JSON_OUT = os.environ.get("JSON_OUT", WEB + "/src/lib/data/benchmark_metrics.json")
 wp.OP_THRESHOLD_DISULFIDE = 0.740   # v3 F1 optimum on all held-out labelled cysteines
 wp.OP_THRESHOLD_METAL = 0.625
+T = "TriCyP (held-out)"             # internal / legend name; the website shows "TriCyP"
+wp.WEB_TOOL_NAME = {T: "TriCyP", "LMetalSite": "LMetalSite", "GPSite": "GPSite", "SSBONDPredict": "SSBONDPredict"}
 LAB = {"0": "Neg", "1": "Dis", "2": "Met"}
 
 # ---- evaluation set and scores: as bench_expanded.py ----
@@ -92,23 +94,43 @@ print("Fe cofactors:", pd.Series(fe).value_counts().to_dict())
 
 # ---- arrays, figures, JSON (September functions) ----
 metal_yyhats = {n: br.build_arrays(gt, s, "Met", n)[:2]
-                for n, s in (("ESM2 (held-out)", tm), ("LMetalSite", lm), ("GPSite", gp))}
+                for n, s in ((T, tm), ("LMetalSite", lm), ("GPSite", gp))}
 disulfide_yyhats = {n: br.build_arrays(gt, s, "Dis", n)[:2]
-                    for n, s in (("ESM2 (held-out)", td), ("SSBONDPredict", ss_full))}
+                    for n, s in ((T, td), ("SSBONDPredict", ss_full))}
 os.makedirs(wp.OUT_DIR, exist_ok=True)
-dc = {"ESM2 (held-out)": "#d62728", "SSBONDPredict": "#9467bd"}
-mc = {"ESM2 (held-out)": "#d62728", "LMetalSite": "#2ca02c", "GPSite": "#1f77b4"}
+dc = {T: "#d62728", "SSBONDPredict": "#9467bd"}
+mc = {T: "#d62728", "LMetalSite": "#2ca02c", "GPSite": "#1f77b4"}
 J = lambda f: os.path.join(wp.OUT_DIR, f)
 wp.plot_single_roc(disulfide_yyhats, dc, J("fig2a_disulfide_roc.png"))
 wp.plot_single_pr(disulfide_yyhats, dc, J("fig2b_disulfide_pr.png"))
-wp.plot_single_threshold(*disulfide_yyhats["ESM2 (held-out)"], "#2166ac", wp.OP_THRESHOLD_DISULFIDE,
+wp.plot_single_threshold(*disulfide_yyhats[T], "#2166ac", wp.OP_THRESHOLD_DISULFIDE,
                          J("fig2c_disulfide_threshold.png"))
 wp.plot_single_roc(metal_yyhats, mc, J("fig2d_metal_roc.png"))
 wp.plot_single_pr(metal_yyhats, mc, J("fig2e_metal_pr.png"))
-wp.plot_single_threshold(*metal_yyhats["ESM2 (held-out)"], "#d62728", wp.OP_THRESHOLD_METAL,
+wp.plot_single_threshold(*metal_yyhats[T], "#d62728", wp.OP_THRESHOLD_METAL,
                          J("fig2f_metal_threshold.png"))
-raw = {"ESM2 (held-out)": tm, "LMetalSite": lm, "GPSite": gp}
-wp.plot_metal_stratification(raw, gt, metal_map, J("figS1_metal_stratification.png"))
+raw = {T: tm, "LMetalSite": lm, "GPSite": gp}
+
+def plot_metal_stratification(raw_scores, outpath):
+    """wp.plot_metal_stratification with the TriCyP legend name (its colours are keyed by name)."""
+    import matplotlib.pyplot as plt
+    from sklearn.metrics import roc_curve, auc
+    fig, axes = plt.subplots(1, 2, figsize=wp.STRIP_FIGSIZE, sharey=True)
+    for ax, (label, pred) in zip(axes, [("Shared metals (Zn / Ca / Mg / Mn)", wp.METAL_STRATUM_PREDICATES["shared_metals"]),
+                                        ("Iron (Fe / Fe-S / heme)", wp.METAL_STRATUM_PREDICATES["iron_only"])]):
+        for tool, scores in raw_scores.items():
+            y, sc = wp.stratified_yyhats(gt, scores, metal_map, pred)
+            if y.sum() == 0: continue
+            fpr, tpr, _ = roc_curve(y, sc)
+            ax.plot(fpr, tpr, color=mc[tool], lw=2, label=f"{tool} (AUROC = {auc(fpr, tpr):.3f}, n+ = {int(y.sum())})")
+        ax.plot([0, 1], [0, 1], "k--", lw=1, alpha=0.5)
+        ax.set_title(label, fontsize=11); ax.set_xlabel("False positive rate")
+        ax.set_xlim(-0.02, 1.02); ax.set_ylim(-0.02, 1.02); ax.legend(loc="lower right", frameon=False, fontsize=9)
+    axes[0].set_ylabel("True positive rate")
+    fig.suptitle("Metal-type stratified ROC (Met vs rest)", fontsize=12, y=1.02)
+    wp._save(fig, outpath)
+
+plot_metal_stratification(raw, J("figS1_metal_stratification.png"))
 wp.write_metrics_json(disulfide_yyhats, metal_yyhats, raw, gt, metal_map)
 
 d = json.load(open(wp.JSON_OUT))

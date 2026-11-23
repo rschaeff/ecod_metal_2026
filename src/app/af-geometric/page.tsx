@@ -2,16 +2,20 @@ import type { Metadata } from 'next';
 import FigureImage from '@/components/ui/FigureImage';
 import StructureViewer from '@/components/viewer/StructureViewer';
 import {
+  FIG_4_TITLE,
   FIG_4_THESIS,
   FIG_4_PANELS,
   FIG_4_STRUCTURES,
+  FIG_4_INTERCHAIN,
 } from '@/lib/paperData';
 
-const PAGE_TITLE = 'AlphaFold geometric scanning';
+// Route kept as /af-geometric so existing links resolve; the content follows
+// the manuscript's Fig 4 (rewritten 2026-11-23).
+const PAGE_TITLE = FIG_4_TITLE;
 const PAGE_DESCRIPTION =
-  'Why AlphaFold-monomer geometric scanning is fundamentally limited as a ' +
-  'disulfide annotation source — paper Fig 4 panels A–F with downloadable ' +
-  'PyMOL sessions and matched PDB / AFDB structures.';
+  'Paper Fig 4: TriCyP disulfide calls checked against experimental and ' +
+  'AlphaFold structures, partnerless calls in low-confidence regions, and ' +
+  'inter-protein disulfides.';
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -20,255 +24,127 @@ export const metadata: Metadata = {
   twitter: { title: `${PAGE_TITLE} | TriCyp`, description: PAGE_DESCRIPTION },
 };
 
-interface StructureExample {
-  panel: 'D' | 'E' | 'F';
-  uniprotAcc: string | null;
-  afdbId: string | null;
-  pdbId: string | null;
-  chainId: string | null;
-  pseFilename: string;
-  afdbPdbFilename: string;
-  pdbFilename: string;
-}
+const pct = (x: number) => `${(x * 100).toFixed(x < 0.1 ? 1 : 0)}%`;
 
-function StructureCard({ example }: { example: StructureExample }) {
-  const hasIdentifiers =
-    example.afdbId || example.pdbId || example.uniprotAcc;
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-        Fig 4{example.panel} · structure assets
-      </p>
-      <div className="mt-2 space-y-1 text-sm text-gray-700 dark:text-gray-300">
-        {example.uniprotAcc && (
-          <div>
-            <span className="text-gray-500 dark:text-gray-400">UniProt:</span>{' '}
-            <a
-              href={`https://www.uniprot.org/uniprotkb/${example.uniprotAcc}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-amber-600 dark:text-amber-400 hover:underline font-mono"
-            >
-              {example.uniprotAcc}
-            </a>
-          </div>
-        )}
-        {example.afdbId && (
-          <div>
-            <span className="text-gray-500 dark:text-gray-400">AFDB model:</span>{' '}
-            <a
-              href={`https://alphafold.ebi.ac.uk/entry/${example.afdbId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-amber-600 dark:text-amber-400 hover:underline font-mono"
-            >
-              {example.afdbId}
-            </a>
-          </div>
-        )}
-        {example.pdbId && (
-          <div>
-            <span className="text-gray-500 dark:text-gray-400">PDB:</span>{' '}
-            <a
-              href={`https://www.rcsb.org/structure/${example.pdbId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-amber-600 dark:text-amber-400 hover:underline font-mono"
-            >
-              {example.pdbId.toUpperCase()}
-              {example.chainId ? ` · chain ${example.chainId}` : ''}
-            </a>
-          </div>
-        )}
-        {!hasIdentifiers && (
-          <p className="text-xs italic text-gray-500 dark:text-gray-400">
-            Paper-supplementary identifiers pending.
-          </p>
-        )}
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <a
-          href={`/structures/${example.pseFilename}`}
-          download
-          className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 font-mono"
-        >
-          ↓ {example.pseFilename}
-        </a>
-        <a
-          href={`/structures/${example.afdbPdbFilename}`}
-          download
-          className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 font-mono"
-        >
-          ↓ AFDB.pdb
-        </a>
-        <a
-          href={`/structures/${example.pdbFilename}`}
-          download
-          className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 font-mono"
-        >
-          ↓ PDB.pdb
-        </a>
-      </div>
-    </div>
-  );
-}
-
-export default function AfGeometricPage() {
-  const examples = FIG_4_STRUCTURES.reduce<Record<string, StructureExample>>(
-    (acc, e) => {
-      acc[e.panel] = e;
-      return acc;
-    },
-    {},
-  );
+export default function Fig4Page() {
+  const panels = (from: string, to: string) =>
+    FIG_4_PANELS.filter((p) => p.panel >= from && p.panel <= to);
+  const ic = FIG_4_INTERCHAIN;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Hero */}
       <header className="mb-8">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
           Paper Fig 4
         </p>
         <h1 className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">
-          AlphaFold geometric scanning
+          {FIG_4_TITLE}
         </h1>
         <p className="mt-3 text-base text-gray-600 dark:text-gray-400 max-w-3xl leading-relaxed">
           {FIG_4_THESIS}
         </p>
       </header>
 
-      {/* Overview row: A, B, C */}
       <section className="mb-10">
-        <header className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            Population statistics
+        <FigureImage
+          src="/figures/fig4_structural_validation.png"
+          alt="Fig 4 — structural validation of TriCyP predictions and inter-protein disulfides"
+          label="Fig 4"
+          description="Manuscript Fig 4, panels A–G."
+          className="w-full"
+        />
+      </section>
+
+      {[
+        { heading: 'Population statistics', from: 'A', to: 'C' },
+        { heading: 'Mismodeled disulfides in AlphaFold models', from: 'D', to: 'E' },
+        { heading: 'Inter-protein disulfides', from: 'F', to: 'G' },
+      ].map((grp) => (
+        <section key={grp.heading} className="mb-10">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            {grp.heading}
           </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 max-w-3xl">
-            Aggregate evidence across paired AFDB / PDB structures.
-          </p>
-        </header>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {FIG_4_PANELS.filter((p) => p.panel <= 'C').map((panel) => (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {panels(grp.from, grp.to).map((panel) => (
+              <article
+                key={panel.panel}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+              >
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Fig 4{panel.panel}
+                </p>
+                <h3 className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {panel.title}
+                </h3>
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                  {panel.caption}
+                </p>
+              </article>
+            ))}
+          </div>
+          {grp.from === 'F' && (
+            <p className="mt-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed max-w-3xl">
+              Inter-chain disulfides are a small share of the bonds in these
+              representative domains: of {ic.bondedCysteines.toLocaleString('en-US')}{' '}
+              geometrically bonded cysteines (Sγ–Sγ ≤ 2.5 Å in biological
+              assembly 1), {pct(ic.interChainShare)} bridge two chains, compared
+              with about 5% of all PDB disulfide bonds. TriCyP recovers{' '}
+              {pct(ic.interChainRecall)} of inter-chain disulfide cysteines (mean
+              P(Dis) {ic.interChainMeanPDis.toFixed(2)}), against about{' '}
+              {pct(ic.intraChainRecall)} of intra-chain ones (mean P(Dis){' '}
+              {ic.intraChainMeanPDis.toFixed(2)}).
+            </p>
+          )}
+        </section>
+      ))}
+
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+          Structures for panels D–G
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {FIG_4_STRUCTURES.map((ex) => (
             <article
-              key={panel.panel}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+              key={ex.panel}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
             >
-              <FigureImage
-                src={`/figures/${panel.imageFilename}`}
-                alt={`Fig 4${panel.panel} — ${panel.title}`}
-                label={`Fig 4${panel.panel} · ${panel.title}`}
-                description={panel.caption}
-              />
-              <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Fig 4{panel.panel}
-              </p>
-              <h3 className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                {panel.title}
-              </h3>
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                {panel.caption}
-              </p>
+              <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Fig 4{ex.panel} · {ex.label}
+              </div>
+              {ex.uniprotAcc ? (
+                <StructureViewer afId={ex.uniprotAcc} className="w-full h-80" />
+              ) : (
+                <StructureViewer pdbId={ex.pdbId} className="w-full h-80" />
+              )}
+              <div className="px-4 py-2 text-sm flex flex-wrap gap-x-4">
+                {ex.uniprotAcc && (
+                  <a
+                    href={`https://alphafold.ebi.ac.uk/entry/${ex.uniprotAcc}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-amber-600 dark:text-amber-400 hover:underline font-mono"
+                  >
+                    AFDB {ex.uniprotAcc}
+                  </a>
+                )}
+                {ex.pdbId && (
+                  <a
+                    href={`https://www.rcsb.org/structure/${ex.pdbId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-amber-600 dark:text-amber-400 hover:underline font-mono"
+                  >
+                    PDB {ex.pdbId}
+                  </a>
+                )}
+              </div>
             </article>
           ))}
         </div>
-      </section>
-
-      {/* Examples row: D, E, F */}
-      <section className="mb-10">
-        <header className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            Structural examples
-          </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 max-w-3xl">
-            Three case studies where a disulfide is firmly geometric in the
-            PDB experimental structure but absent from the matched AFDB-monomer
-            model. Download the PyMOL sessions to inspect the cysteine-pair
-            geometry locally.
-          </p>
-        </header>
-        <div className="space-y-6">
-          {FIG_4_PANELS.filter((p) => p.panel >= 'D').map((panel) => {
-            const ex = examples[panel.panel];
-            return (
-              <article
-                key={panel.panel}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-6"
-              >
-                <header>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    Fig 4{panel.panel}
-                  </p>
-                  <h3 className="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">
-                    {panel.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed max-w-3xl">
-                    {panel.caption}
-                  </p>
-                </header>
-
-                <FigureImage
-                  src={`/figures/${panel.imageFilename}`}
-                  alt={`Fig 4${panel.panel} — ${panel.title}`}
-                  label={`Fig 4${panel.panel} · ${panel.title}`}
-                  description={panel.caption}
-                />
-
-                {/* Side-by-side live viewers when identifiers are known */}
-                {ex && (ex.afdbId || ex.uniprotAcc || ex.pdbId) && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        AFDB-monomer model
-                      </div>
-                      {ex.uniprotAcc ? (
-                        <StructureViewer afId={ex.uniprotAcc} className="w-full h-80" />
-                      ) : (
-                        <div className="h-80 flex items-center justify-center text-sm text-gray-500 dark:text-gray-400 italic px-4 text-center">
-                          UniProt accession pending — viewer will load once identifier is filled in.
-                        </div>
-                      )}
-                    </div>
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        PDB experimental structure
-                      </div>
-                      {ex.pdbId ? (
-                        <StructureViewer
-                          pdbId={ex.pdbId}
-                          chainId={ex.chainId}
-                          className="w-full h-80"
-                        />
-                      ) : (
-                        <div className="h-80 flex items-center justify-center text-sm text-gray-500 dark:text-gray-400 italic px-4 text-center">
-                          PDB ID pending — viewer will load once identifier is filled in.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {ex && <StructureCard example={ex} />}
-              </article>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Methods note */}
-      <section className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-          Methods note
-        </h2>
-        <p className="mt-2 text-sm text-gray-700 dark:text-gray-300 leading-relaxed max-w-3xl">
-          Sγ–Sγ geometric scanning uses a 2.5 Å cutoff between cysteine sulfurs
-          to call a disulfide. Scanning AFDB-monomer models with the same cutoff
-          recovers a small minority of PDB-annotated disulfides; relaxing the
-          cutoff to 5 Å trades sensitivity for a high false-positive rate. The
-          point of this page is not that AlphaFold is wrong — the residue-level
-          conformations are reasonable — but that monomer geometry is the wrong
-          inference layer for disulfide annotation, which is why TriCyp uses
-          ESM2-3state predictions over geometric scanning for AFDB-source
-          domains.
+        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400 max-w-3xl">
+          The viewers show the monomer AlphaFold model or the deposited
+          structure; the TPC2 homodimer in panel F is an AlphaFold-Multimer
+          model shown only in the figure.
         </p>
       </section>
     </div>

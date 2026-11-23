@@ -70,10 +70,10 @@ export default function DomainClient({ sequence, classifications, evidence, rang
 
       {/* Evidence Panels */}
       <div className="space-y-3">
-        {/* ESM2 Predictions */}
+        {/* TriCyP predictions */}
         {evidence.esm2Predictions.length > 0 && (
           <EvidencePanel
-            title="ESM2 3-State Predictions"
+            title="TriCyP 3-state predictions"
             count={evidence.esm2Predictions.length}
             defaultOpen
           >

@@ -12,7 +12,7 @@ import {
 
 const PAGE_TITLE = 'About / Methods';
 const PAGE_DESCRIPTION =
-  'Methods overview for TriCyp: pipeline, training data, ESM2-3state ' +
+  'Methods overview for TriCyp: pipeline, training data, TriCyP ' +
   'model architecture, threshold selection, benchmarking, and software / ' +
   'data availability.';
 
@@ -49,10 +49,11 @@ export default function AboutPage() {
           How TriCyp classifies cysteine fates
         </h1>
         <p className="mt-3 text-base text-gray-600 dark:text-gray-400 max-w-3xl leading-relaxed">
-          TriCyp is the deposition for an ESM2-based three-state cysteine
-          classifier — disulfide-bonded, metal-binding, or free thiol — applied
-          across roughly 700,000 ECOD F70 representative domains. Section
-          anchors below match the manuscript Methods subheadings.
+          TriCyp is the companion site for TriCyP, a three-state cysteine
+          classifier — disulfide-bonded, metal-binding, or free thiol — that
+          works from sequence alone (ESM-2 embeddings), applied to the
+          2,706,778 cysteines of the 691,078 ECOD F70 representative domains
+          that contain one. Sections follow the manuscript Methods.
         </p>
       </header>
 
@@ -81,22 +82,22 @@ export default function AboutPage() {
           Pipeline
         </h2>
         <p className="mt-3 text-sm text-gray-700 dark:text-gray-300 max-w-3xl leading-relaxed">
-          For every cysteine in a domain, the pipeline runs a fine-tuned ESM2
-          classifier that emits a probability over three states — free thiol,
-          disulfide, metal-binding. Probabilities are thresholded into a
-          three-state call; per-cysteine outputs are aggregated to per-domain
-          and per-H-group summaries that back the dashboard, the family browser,
-          and the H-group browser. PDB-source domains additionally carry
-          structural ground truth from geometric Sγ–Sγ scanning, PDB SSBOND
-          records, and PDB metal LINK records, which the benchmark page uses to
-          score the classifier.
+          Each domain sequence is embedded with the pretrained ESM-2 650M
+          language model; the embedding at every cysteine goes to the TriCyP
+          classifier, which returns probabilities for free thiol, disulfide
+          and metal-binding. Probabilities are thresholded into a three-state
+          call, and per-cysteine calls are aggregated to the per-domain and
+          per-H-group summaries behind the dashboard, the family browser and
+          the H-group browser. PDB-sourced domains also carry geometric
+          annotations (Sγ–Sγ and Sγ–metal distances in the deposited
+          structure), shown alongside the predictions.
         </p>
         <div className="mt-4">
           <FigureImage
             src="/figures/fig1_pipeline.png"
             alt="Fig 1 — pipeline overview"
             label="Fig 1 · Pipeline"
-            description="ESM2-3state classifier inputs (sequence) and outputs (three-state per-cysteine call), plus the structural-evidence streams used to validate PDB-source ground truth."
+            description="Paper Fig 1: the TriCyP network (1,280-dimensional ESM-2 embedding → 64 hidden units → 3 classes) and its application to ECOD F70 representative domains."
             className="w-full"
           />
         </div>
@@ -108,15 +109,34 @@ export default function AboutPage() {
           Training data
         </h2>
         <p className="mt-3 text-sm text-gray-700 dark:text-gray-300 max-w-3xl leading-relaxed">
-          The classifier is trained on PDB-source cysteines with structural
-          ground truth: disulfide labels from PDB SSBOND records cross-checked
-          by Sγ–Sγ geometric scanning at 2.5 Å, metal-binding labels from PDB
-          LINK / SITE records where a cysteine sulfur coordinates a metal ion
-          or metal-bearing cofactor, and free-thiol labels for cysteines not
-          captured by either evidence stream. Held-out validation and test
-          sets are drawn at the F-group level so the splits do not leak
-          structural family between training and evaluation.
+          Labels come from the geometry of 89,698 representative,
+          high-resolution PDB chains. A cysteine is disulfide-bonded if its Sγ
+          is within 3 Å of another cysteine&apos;s Sγ, metal-binding if its Sγ
+          is within 3 Å of a metal atom (Zn, Fe, Ca, Cu, Hg, Mg, Ni, Cd, Mn,
+          Co), and a free thiol if its Sγ is more than 5 Å from any other
+          cysteine or metal. Grey-zone cysteines (3–5 Å) and cysteines meeting
+          both criteria are excluded. Labels are transferred to matched
+          AlphaFold DB (v4) entries and made non-redundant at 90% identity,
+          giving 216,278 labelled cysteines in 58,259 proteins (37,418
+          disulfide, 34,452 metal-binding, 144,408 free thiol).
         </p>
+        <p className="mt-3 text-sm text-gray-700 dark:text-gray-300 max-w-3xl leading-relaxed">
+          Models are trained with five-fold cross-validation over 90%-identity
+          sequence clusters: each fold in turn is the test set, and 25% of the
+          remaining proteins are held out for early stopping. Splits by 50%
+          identity, ECOD F-, H- and X-group, and a temporal split (trained
+          before 2020, tested on 2020 and later) give consistent performance
+          (manuscript Table 1).
+        </p>
+        <div className="mt-4">
+          <FigureImage
+            src="/figures/s1fig_dataset_pipeline.png"
+            alt="S1 Fig — pipeline to prepare the training and benchmark datasets"
+            label="S1 Fig · Dataset pipeline"
+            description="Manuscript S1 Fig: from PDB chains to the labelled training set and the benchmark set."
+            className="w-full"
+          />
+        </div>
       </section>
 
       {/* Model */}
@@ -125,13 +145,16 @@ export default function AboutPage() {
           Model architecture
         </h2>
         <p className="mt-3 text-sm text-gray-700 dark:text-gray-300 max-w-3xl leading-relaxed">
-          The published 3-state classifier is an ensemble of five ESM2
-          checkpoints (<code className="font-mono">best_modelA.pth</code>{' '}…{' '}
-          <code className="font-mono">best_modelE.pth</code>), each fine-tuned
-          from the same ESM2 base with a per-cysteine softmax head over the
-          three classes. Inference averages per-class probabilities across the
-          ensemble. The full source — <code className="font-mono">cys3state</code>{' '}
-          — is available alongside the model weights; see{' '}
+          ESM-2 is frozen. The TriCyP classifier is a two-layer network on the
+          1,280-dimensional embedding of the target cysteine: a linear layer
+          to 64 units, batch normalization, ReLU and dropout, then a linear
+          layer to the three classes (82,307 parameters). It is trained with
+          weighted cross-entropy (Adam, learning rate 0.00004, dropout 0.6).
+          The five cross-validation models (<code className="font-mono">best_modelA.pth</code>{' '}…{' '}
+          <code className="font-mono">best_modelE.pth</code>) form the
+          ensemble; a cysteine&apos;s prediction is the mean of their
+          probabilities. Source and weights are in the{' '}
+          <code className="font-mono">tricyp</code> repository; see{' '}
           <Link href="/downloads" className="text-amber-600 dark:text-amber-400 hover:underline">
             Downloads
           </Link>
@@ -184,11 +207,11 @@ export default function AboutPage() {
           </Link>{' '}
           page (paper Fig 2 + S2 Fig). On the v3 benchmark, all three
           metal-binding tools score in the same band on the metals they
-          were trained for (Zn / Ca / Mg / Mn, AUROC 0.996–0.999); ESM2-3state&apos;s residual advantage shows
+          were trained for (Zn / Ca / Mg / Mn, AUROC 0.996–0.999); TriCyP&apos;s residual advantage shows
           up specifically on iron coordination, where iron-stratum AUROC
           reaches{' '}
           <span className="font-mono font-semibold">{BENCHMARK_IRON_ONLY[0].auroc.toFixed(3)}</span>{' '}
-          for ESM2-3state versus{' '}
+          for TriCyP versus{' '}
           <span className="font-mono">{BENCHMARK_IRON_ONLY[1].auroc.toFixed(3)}</span>{' '}
           (LMetalSite) and{' '}
           <span className="font-mono">{BENCHMARK_IRON_ONLY[2].auroc.toFixed(3)}</span>{' '}
@@ -206,7 +229,7 @@ export default function AboutPage() {
         <ul className="mt-3 space-y-2 text-sm text-gray-700 dark:text-gray-300 leading-relaxed max-w-3xl">
           <li>
             <strong>Predictor source:</strong>{' '}
-            <code className="font-mono">cys3state</code> repository — see the
+            <code className="font-mono">tricyp</code> repository (github.com/conglab2020/tricyp) — see the
             link on the{' '}
             <Link href="/downloads#predictor" className="text-amber-600 dark:text-amber-400 hover:underline">
               Downloads
@@ -214,8 +237,11 @@ export default function AboutPage() {
             page.
           </li>
           <li>
-            <strong>Model weights:</strong> five ESM2 checkpoints, deposited
-            on Zenodo alongside the per-cysteine TSV.
+            <strong>Model weights and full deposit:</strong> the five TriCyP v3
+            classifier heads, predictions, benchmark and figure data on Zenodo,{' '}
+            <a href="https://doi.org/10.5281/zenodo.24328342" target="_blank" rel="noopener noreferrer" className="text-amber-600 dark:text-amber-400 hover:underline">
+              10.5281/zenodo.24328342
+            </a>.
           </li>
           <li>
             <strong>Per-cysteine TSV:</strong> canonical full dump
@@ -229,8 +255,8 @@ export default function AboutPage() {
           </li>
           <li>
             <strong>Figure data:</strong> one CSV per main and supplementary
-            figure, mirroring the manuscript&apos;s{' '}
-            <code className="font-mono">paper/figure_data/</code> exports.
+            figure panel the site shows; the complete source data for every
+            manuscript figure and table is in the Zenodo record.
           </li>
           <li>
             <strong>REST API:</strong> read-only JSON endpoints for domain,
@@ -259,9 +285,8 @@ export default function AboutPage() {
             CC-BY-4.0
           </a>
           : free reuse with attribution to the manuscript. The predictor
-          source code (<code className="font-mono">cys3state</code>) carries
-          its own existing license — check the repository for terms before
-          redistribution.
+          source code and model weights (<code className="font-mono">tricyp</code>)
+          are released under the MIT license.
         </p>
       </section>
 

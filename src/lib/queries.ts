@@ -94,7 +94,7 @@ export async function getMethodStats(): Promise<MethodStat[]> {
   `);
 
   const meta: Record<string, { description: string; type: 'prediction' | 'annotation' }> = {
-    'ESM2 3-state': { description: 'Per-cysteine 3-class prediction (Neg/Dis/Met) via fine-tuned ESM2', type: 'prediction' },
+    'ESM2 3-state': { description: 'Per-cysteine 3-class prediction (Neg/Dis/Met) by TriCyP (classifier on frozen ESM-2 embeddings)', type: 'prediction' },
     'Geometric SS': { description: 'Disulfide bonds detected by S\u03B3-S\u03B3 distance < 2.5 \u00C5', type: 'prediction' },
     'PDB SSBOND': { description: 'Experimental disulfide bonds from PDB SSBOND records', type: 'annotation' },
     'PDB Metal LINK': { description: 'Metal coordination from PDB LINK/SITE records', type: 'annotation' },
@@ -234,7 +234,7 @@ export async function getFamilyTaxonomy(fGroupId: string): Promise<SuperkingdomB
   }));
 }
 
-// ---- H-group aggregates (Fig 5A,B) ----
+// ---- H-group aggregates (H-group browser; extends paper Fig 5) ----
 
 // One row per H-group with PDB-source and AFDB-source classification
 // fractions. Backs the /h-group browser confusion matrix and the

@@ -13,7 +13,7 @@ import {
 
 const PAGE_TITLE = 'Benchmark';
 const PAGE_DESCRIPTION =
-  'Held-out benchmarking of ESM2-3state cysteine classification against ' +
+  'Held-out benchmarking of TriCyP cysteine classification against ' +
   'SSBONDPredict, LMetalSite, and GPSite, with metal-type-stratified ' +
   'AUROC reported alongside the all-metals comparison.';
 
@@ -54,7 +54,7 @@ const benchmarkCsvRows: (string | number)[][] = [
 ];
 
 // Headline section: pulls the all-stratum rows for both tasks straight
-// out of BENCHMARK_TABLE so there is one source of truth. ESM2-3state
+// out of BENCHMARK_TABLE so there is one source of truth. TriCyP
 // renders first per task, baselines after, in the order they appear in
 // the table.
 const HEADLINE_TASK_LABEL: Record<BenchmarkRow['task'], string> = {
@@ -74,13 +74,13 @@ export default function BenchmarkPage() {
       {/* Hero */}
       <header className="mb-8">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-          Paper Fig 2 + Fig S1
+          Paper Fig 2 + S2 Fig
         </p>
         <h1 className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">
           Benchmark
         </h1>
         <p className="mt-3 text-base text-gray-600 dark:text-gray-400 max-w-3xl">
-          Held-out benchmarking of ESM2-3state against the structure-aware
+          Held-out benchmarking of TriCyP against the structure-aware
           baselines used in the manuscript. Disulfide prediction is compared
           against SSBONDPredict; metal-binding prediction against LMetalSite
           and GPSite. Operating thresholds were chosen on the held-out
@@ -136,7 +136,7 @@ export default function BenchmarkPage() {
           three metal-binding tools score in the same band (AUROC
           0.973–0.998) because most metal positives are zinc — a metal
           LMetalSite and GPSite were trained on. Stratifying by metal type isolates where
-          ESM2-3state actually differs: on the shared metals (Zn / Ca /
+          TriCyP actually differs: on the shared metals (Zn / Ca /
           Mg / Mn) the AUROC values are essentially tied (0.996–0.999),
           and the residual difference in the all-metals number comes
           entirely from iron coordination — Fe-S clusters and especially
@@ -163,9 +163,9 @@ export default function BenchmarkPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <FigureImage
             src="/figures/fig2a_disulfide_roc.png"
-            alt="Fig 2A — Disulfide ROC: ESM2-3state vs SSBONDPredict"
+            alt="Fig 2A — Disulfide ROC: TriCyP vs SSBONDPredict"
             label="Fig 2A · Disulfide ROC"
-            description="ESM2-3state held-out and ensemble curves vs SSBONDPredict."
+            description="TriCyP held-out and ensemble curves vs SSBONDPredict."
           />
           <FigureImage
             src="/figures/fig2b_disulfide_pr.png"
@@ -183,7 +183,7 @@ export default function BenchmarkPage() {
             src="/figures/fig2d_metal_roc.png"
             alt="Fig 2D — Metal-binding ROC vs LMetalSite and GPSite"
             label="Fig 2D · Metal ROC"
-            description="ESM2-3state vs LMetalSite and GPSite, all metals pooled."
+            description="TriCyP vs LMetalSite and GPSite, all metals pooled."
           />
           <FigureImage
             src="/figures/fig2e_metal_pr.png"
@@ -206,7 +206,7 @@ export default function BenchmarkPage() {
       <section className="mb-10">
         <header className="mb-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-            Fig S1
+            S2 Fig
           </p>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             Metal-type-stratified ROC strip
@@ -217,9 +217,9 @@ export default function BenchmarkPage() {
         </header>
         <FigureImage
           src="/figures/figS1_metal_stratification.png"
-          alt="Fig S1 — metal-type-stratified ROC strip"
-          label="Fig S1 · Metal-type-stratified ROC"
-          description="ROC curves on the shared-metals (Zn / Ca / Mg / Mn) and iron-only strata across ESM2-3state, LMetalSite, GPSite."
+          alt="S2 Fig — metal-type-stratified ROC strip"
+          label="S2 Fig · Metal-type-stratified ROC"
+          description="ROC curves on the shared-metals (Zn / Ca / Mg / Mn) and iron-only strata across TriCyP, LMetalSite, GPSite."
           className="w-full"
         />
 

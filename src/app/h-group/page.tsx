@@ -10,9 +10,9 @@ export const dynamic = 'force-dynamic';
 
 const PAGE_TITLE = 'H-group browser';
 const PAGE_DESCRIPTION =
-  'Browse ECOD H-groups by structurally-known vs ESM2-predicted cysteine ' +
-  'fractions. Mirrors paper Fig 5A,B confusion matrices for disulfide and ' +
-  'metal-binding tasks.';
+  'Browse ECOD H-groups by structurally-known vs TriCyP-predicted cysteine ' +
+  'fractions for disulfide and metal-binding, with the three novel ' +
+  'metal-binding H-groups of paper Fig 5B–D.';
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -42,7 +42,7 @@ export default async function HGroupBrowserPage() {
       {/* Hero */}
       <header className="mb-8">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-          Paper Fig 5A,B
+          Paper Fig 5 · extended view
         </p>
         <h1 className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">
           H-group browser
@@ -68,7 +68,7 @@ export default async function HGroupBrowserPage() {
             Paper-highlighted H-groups
           </h2>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            The three H-groups featured in Fig 5C–E exemplify the
+            The three H-groups featured in Fig 5B–D exemplify the
             low-known / high-predicted cell of the metal-binding confusion
             matrix.
           </p>
@@ -101,7 +101,7 @@ export default async function HGroupBrowserPage() {
         <article className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <header className="mb-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-red-700 dark:text-red-400">
-              Fig 5A · Disulfide
+              Disulfide
             </p>
             <h3 className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
               Disulfide confusion matrix
@@ -117,13 +117,13 @@ export default async function HGroupBrowserPage() {
         <article className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <header className="mb-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-green-700 dark:text-green-400">
-              Fig 5B · Metal-binding
+              Metal-binding
             </p>
             <h3 className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
               Metal-binding confusion matrix
             </h3>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              The Fig 5C–E highlighted H-groups live in the lower-right cell
+              The Fig 5B–D highlighted H-groups live in the lower-right cell
               of this matrix.
             </p>
           </header>

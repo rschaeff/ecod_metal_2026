@@ -225,8 +225,9 @@ export default function PaperPage() {
           </li>
           <li>
             The <Link href="/h-group" className="text-amber-600 dark:text-amber-400 hover:underline">H-group browser</Link>{' '}
-            replicates Fig 5A,B as click-through confusion matrices; the three
-            highlighted novel-metal H-groups link directly to their detail pages.
+            ranks and bins every H-group by known vs predicted cysteine fractions
+            (an extended view of Fig 5); the three novel metal-binding H-groups
+            of Fig 5B–D link directly to their detail pages.
           </li>
           <li>
             Public REST API endpoints are documented on the{' '}
