@@ -71,7 +71,7 @@ export const BULK_DATA: DownloadEntry[] = [
     filename: 'hgroup-aggregates.tsv',
     path: '/data/hgroup-aggregates.tsv',
     description:
-      'Per-H-group aggregate underlying Fig 3C (per-kingdom rates) and Fig 5A,B (confusion matrices). One row per H-group.',
+      'Per-H-group aggregate behind the H-group browser (known vs predicted fractions; extends Fig 5). One row per H-group.',
     format: 'TSV',
     schema: [
       'h_group_id',
